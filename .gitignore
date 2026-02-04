@@ -1,6 +1,18 @@
+# Data files (managed separately)
+MARKET_WATCH.xlsx
+*.pkl
+
+# Python
 *.pyc
 __pycache__/
+*.egg-info/
+dist/
+build/
+
+# Output
 output/
 output_clustered/
-*.pkl
+
+# OS
 .DS_Store
+Thumbs.db
