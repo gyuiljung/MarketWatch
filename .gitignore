@@ -1,0 +1,6 @@
+*.pyc
+__pycache__/
+output/
+output_clustered/
+*.pkl
+.DS_Store
