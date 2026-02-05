@@ -57,6 +57,17 @@ Examples:
     validate_parser = subparsers.add_parser('validate-config', help='Validate config file')
     validate_parser.add_argument('config', type=Path, help='Config file path')
 
+    # V8 signal command
+    v8_parser = subparsers.add_parser('v8-signal', help='Compute V8 trading signals')
+    v8_parser.add_argument('-d', '--v8db', type=Path,
+                          help='Path to V8DB_daily.xlsx (default: Documents/V8DB_daily.xlsx)')
+    v8_parser.add_argument('--date', type=str,
+                          help='Target date (YYYY-MM-DD, default: latest)')
+    v8_parser.add_argument('--bm', choices=['kospi', '3ybm', 'all'],
+                          default='all', help='Benchmark to analyze (default: all)')
+    v8_parser.add_argument('-v', '--verbose', action='store_true',
+                          help='Verbose output with factor details')
+
     # Version command
     parser.add_argument('--version', action='store_true', help='Show version')
 
@@ -71,6 +82,8 @@ Examples:
         return run_analysis(args)
     elif args.command == 'validate-config':
         return validate_config(args)
+    elif args.command == 'v8-signal':
+        return run_v8_signal(args)
     else:
         parser.print_help()
         return 0
@@ -155,7 +168,21 @@ def run_analysis(args) -> int:
 
             if not args.quiet:
                 print("\n" + "=" * 70)
-                print(report)
+                # Handle Windows console encoding (cp949 can't handle unicode box chars)
+                try:
+                    print(report)
+                except UnicodeEncodeError:
+                    # Replace unicode box characters with ASCII equivalents
+                    ascii_report = report
+                    replacements = {
+                        '╔': '+', '╗': '+', '╚': '+', '╝': '+',
+                        '═': '=', '║': '|', '━': '-',
+                        '⚠': '[!]', '✓': '[v]', '△': '[^]',
+                        '█': '#', '─': '-'
+                    }
+                    for uni, asc in replacements.items():
+                        ascii_report = ascii_report.replace(uni, asc)
+                    print(ascii_report)
 
         # Dashboard
         if config.output.save_dashboard and not args.report_only:

@@ -106,9 +106,15 @@ class BaseDataLoader:
         Parse MARKET_WATCH.xlsx format.
 
         Format:
-            - Row 3 (index 2): Asset names
+            - Row 3 (index 2): Asset names (OFFSET: A열 자산명 → B열 데이터)
             - Row 5+ (index 4+): Data
-            - Column 0: Dates
+            - Column 0 (A열): Dates
+            - Column 1+ (B열~): Asset data
+
+        Note:
+            MARKET_WATCH.xlsx has a special structure where asset names in Row 2
+            are offset by one column. The asset name in column A actually refers
+            to data in column B, and so on.
 
         Args:
             df: Raw DataFrame from Excel
@@ -116,16 +122,31 @@ class BaseDataLoader:
         Returns:
             Parsed DataFrame with Date index and asset columns
         """
-        # Extract asset names from header row
-        asset_names = df.iloc[EXCEL_HEADER_ROW, :].tolist()
+        # Extract asset names from header row (with offset handling)
+        # MARKET_WATCH.xlsx 특수 구조:
+        # - A열 Row 2: 자산명 (예: CNHKRW) → 실제로는 B열 데이터에 해당
+        # - B열 Row 2: nan (비어있음)
+        # - C열 Row 2: 자산명 (예: USDKRW) → C열 데이터에 해당
+        # - A열 데이터: 날짜
+        # - B열 데이터: A열 자산명의 값
+        asset_names_raw = df.iloc[EXCEL_HEADER_ROW, :].tolist()
+
+        # Build column names:
+        # - Column 0 (A열): Date
+        # - Column 1 (B열): A열 자산명 (offset 적용)
+        # - Column 2+ (C열~): C열 이후 자산명 그대로
+        asset_names = ['Date', asset_names_raw[0]] + asset_names_raw[2:]  # B열 자산명(nan) skip
 
         # Extract data rows
         data = df.iloc[EXCEL_DATA_START_ROW:, :].copy()
-        data.columns = asset_names
 
-        # First column is Date
-        date_col = asset_names[0]
-        data = data.rename(columns={date_col: 'Date'})
+        # Ensure column count matches
+        if len(data.columns) > len(asset_names):
+            asset_names = asset_names + [f'_unnamed_{i}' for i in range(len(data.columns) - len(asset_names))]
+        elif len(data.columns) < len(asset_names):
+            asset_names = asset_names[:len(data.columns)]
+
+        data.columns = asset_names
 
         # Parse dates
         try:
