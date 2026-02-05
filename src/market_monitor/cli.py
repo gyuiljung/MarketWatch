@@ -52,6 +52,10 @@ Examples:
                           help='Verbose output')
     run_parser.add_argument('-q', '--quiet', action='store_true',
                           help='Quiet mode (warnings only)')
+    run_parser.add_argument('--v8db', type=Path,
+                          help='Path to V8DB_daily.xlsx for signal integration')
+    run_parser.add_argument('--v8bm', choices=['kospi', '3ybm'], default='kospi',
+                          help='V8 benchmark to use (default: kospi)')
 
     # Validate config command
     validate_parser = subparsers.add_parser('validate-config', help='Validate config file')
@@ -144,6 +148,26 @@ def run_analysis(args) -> int:
         snapshot = network.compute_snapshot(recent, network_assets, window)
         print(f"  Top Hub: {snapshot.top_hub_bt} (Bt={snapshot.top3_bt[0][1]:.4f})")
 
+        # Multi-scale network snapshots (1W, 1M, 3M, 1Y)
+        print("  Computing multi-scale networks...")
+        multi_snapshots = network.compute_multi_scale_snapshots(data.returns, network_assets)
+        for scale, snap in multi_snapshots.items():
+            print(f"    {scale}: Hub={snap.top_hub_bt}, Sync={snap.network_sync:.4f}")
+
+        # V8DB integration (if provided)
+        v8_edge_summary = None
+        if args.v8db:
+            print("  Integrating V8DB signals...")
+            try:
+                from .analysis.v8_edge_enricher import V8EdgeEnricher
+                enricher = V8EdgeEnricher(args.v8db, bm=args.v8bm)
+                snapshot.mst = enricher.enrich_edges(snapshot.mst)
+                v8_edge_summary = enricher.get_edge_summary(snapshot.mst)
+                print(f"    V8 signals applied to {len(snapshot.mst.edges())} edges")
+            except Exception as e:
+                logger.warning(f"V8DB integration failed: {e}")
+                print(f"    Warning: V8DB integration failed - {e}")
+
         # Compute volatility
         print("\n[4/5] Computing volatility metrics...")
         vol = VolatilityAnalyzer(config)
@@ -159,7 +183,11 @@ def run_analysis(args) -> int:
         # Report
         if config.output.save_report:
             report_gen = ReportGenerator(config)
-            report = report_gen.generate(snapshot, indicators, rv_pct, date)
+            report = report_gen.generate(
+                snapshot, indicators, rv_pct, date,
+                multi_snapshots=multi_snapshots,
+                v8_edge_summary=v8_edge_summary
+            )
 
             report_path = output_dir / f"{config.output.report_prefix}_{date_str}.txt"
             with open(report_path, 'w', encoding='utf-8') as f:
@@ -230,6 +258,61 @@ def validate_config(args) -> int:
         return 0
     except ConfigError as e:
         print(f"✗ Config validation failed: {e}")
+        return 1
+
+
+def run_v8_signal(args) -> int:
+    """Run V8 signal analysis."""
+    import logging
+    from .utils.logging import setup_logging
+    from .analysis.v8_signal import V8SignalAnalyzer
+    from .core.exceptions import MarketMonitorError
+
+    # Setup logging
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    setup_logging(level=log_level)
+    logger = logging.getLogger(__name__)
+
+    print("=" * 60)
+    print("  V8 SIGNAL ANALYZER")
+    print("=" * 60)
+
+    try:
+        # Initialize analyzer
+        analyzer = V8SignalAnalyzer(v8db_path=args.v8db)
+
+        if args.bm == 'all':
+            # Compute all signals
+            summary = analyzer.get_signal_summary(args.date)
+            print(summary)
+        else:
+            # Compute single BM signal
+            result = analyzer.compute_signal(args.bm, args.date)
+
+            print(f"\nBenchmark: {result.bm.upper()}")
+            print(f"Date: {result.date.date()}")
+            print("-" * 40)
+            print(f"Signal: {result.total_signal:.2f} ({result.interpretation.upper()})")
+            print(f"Raw Signal: {result.raw_signal:.3f}")
+            print(f"T+1 (Korean): {result.t1_contribution:+.3f}")
+            print(f"T+2 (Overseas): {result.t2_contribution:+.3f}")
+
+            if args.verbose and result.top_contributors:
+                print("\nTop Contributing Factors:")
+                print("-" * 60)
+                for f in result.top_contributors:
+                    print(f"  {f.name[:35]:35s} Z={f.z_score:+5.2f} C={f.contribution:+.3f} T+{f.t_plus}")
+
+        print("\n" + "=" * 60)
+        return 0
+
+    except MarketMonitorError as e:
+        logger.error(str(e))
+        print(f"\nError: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error")
+        print(f"\nUnexpected error: {e}", file=sys.stderr)
         return 1
 
 

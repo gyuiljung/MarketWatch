@@ -75,6 +75,15 @@ DEFAULT_LOOKBACK = 252
 # Multi-scale windows for synchronization analysis
 DEFAULT_SYNC_WINDOWS: List[int] = [5, 20, 60]
 
+# Multi-scale network analysis windows (for full MST snapshots)
+# 1W=5, 1M=22, 3M=66, 1Y=252 trading days
+NETWORK_SCALE_WINDOWS: Dict[str, int] = {
+    '1W': 5,
+    '1M': 22,
+    '3M': 66,
+    '1Y': 252,
+}
+
 # =============================================================================
 # Visualization Colors (Dark Theme - GitHub Style)
 # =============================================================================

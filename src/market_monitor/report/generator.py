@@ -42,6 +42,8 @@ class ReportGenerator:
         date: datetime,
         te_results: Optional[Dict] = None,
         te_net_flow: Optional[Dict] = None,
+        multi_snapshots: Optional[Dict[str, NetworkSnapshot]] = None,
+        v8_edge_summary: Optional[str] = None,
     ) -> str:
         """
         Generate analysis report.
@@ -123,6 +125,44 @@ Elevated (>{self.thresholds.rv_elevated}%ile): {', '.join(elevated[:5]) if eleva
             for asset, pct in rv_sorted.head(10).items():
                 status = "⚠ EXTREME" if pct > 90 else ("△ ELEVATED" if pct > 75 else "")
                 report += f"  {asset:<12}: {pct:5.1f}%  {status}\n"
+
+        # Multi-scale network snapshots
+        if multi_snapshots:
+            report += f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MULTI-SCALE NETWORK (1W / 1M / 3M / 1Y)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"""
+            report += f"  {'Scale':<6} {'Top Hub':<12} {'Bt':>8} {'Sync':>8} {'Hub Avg|ρ|':>12}\n"
+            report += "  " + "-" * 50 + "\n"
+
+            for scale in ['1W', '1M', '3M', '1Y']:
+                if scale in multi_snapshots:
+                    snap = multi_snapshots[scale]
+                    bt_val = snap.top3_bt[0][1] if snap.top3_bt else 0
+                    report += f"  {scale:<6} {snap.top_hub_bt:<12} {bt_val:>8.4f} {snap.network_sync:>8.4f} {snap.hub_avg_corr:>12.4f}\n"
+                else:
+                    report += f"  {scale:<6} {'(insufficient data)':<12}\n"
+
+            # Hub stability analysis
+            hubs = [multi_snapshots[s].top_hub_bt for s in ['1W', '1M', '3M', '1Y'] if s in multi_snapshots]
+            unique_hubs = list(dict.fromkeys(hubs))  # preserve order, remove duplicates
+
+            if len(unique_hubs) == 1:
+                report += f"\n  ✓ Hub Stable: {unique_hubs[0]} dominates across all scales\n"
+            else:
+                report += f"\n  △ Hub Shift: {' → '.join(unique_hubs)}\n"
+
+        # V8 Signal integration
+        if v8_edge_summary:
+            report += f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+V8 SIGNAL (Edge Attributes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{v8_edge_summary}
+"""
 
         # Alerts
         report += f"""

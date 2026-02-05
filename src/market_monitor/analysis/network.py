@@ -13,7 +13,7 @@ import numpy as np
 import networkx as nx
 
 from ..core.config import Config
-from ..core.constants import MST_MIN_NODES, CORRELATION_THRESHOLD, DEFAULT_SYNC_WINDOWS
+from ..core.constants import MST_MIN_NODES, CORRELATION_THRESHOLD, DEFAULT_SYNC_WINDOWS, NETWORK_SCALE_WINDOWS
 from ..core.exceptions import InsufficientDataError, NetworkConstructionError
 
 logger = logging.getLogger(__name__)
@@ -344,3 +344,47 @@ class NetworkAnalyzer:
                 )
 
         return df
+
+    def compute_multi_scale_snapshots(
+        self,
+        returns: pd.DataFrame,
+        network_assets: Optional[List[str]] = None,
+        windows: Optional[Dict[str, int]] = None
+    ) -> Dict[str, NetworkSnapshot]:
+        """
+        Compute network snapshots at multiple time scales.
+
+        Args:
+            returns: Returns DataFrame
+            network_assets: Assets to include
+            windows: Dict of scale_name -> window_days (default: NETWORK_SCALE_WINDOWS)
+
+        Returns:
+            Dict of scale_name -> NetworkSnapshot (e.g., {'1W': snapshot, '1M': snapshot, ...})
+        """
+        if windows is None:
+            windows = NETWORK_SCALE_WINDOWS
+
+        if network_assets:
+            cols = [c for c in network_assets if c in returns.columns]
+        else:
+            cols = list(returns.columns)
+
+        snapshots = {}
+        data_len = len(returns)
+
+        for scale_name, window in windows.items():
+            if data_len < window:
+                logger.warning(f"Insufficient data for {scale_name} ({window} days). Have {data_len} days.")
+                continue
+
+            try:
+                recent = returns[cols].iloc[-window:]
+                snapshot = self.compute_snapshot(recent, cols, window)
+                snapshots[scale_name] = snapshot
+                logger.debug(f"{scale_name} ({window}d): Hub={snapshot.top_hub_bt}, Sync={snapshot.network_sync:.4f}")
+            except Exception as e:
+                logger.warning(f"Failed to compute {scale_name} snapshot: {e}")
+                continue
+
+        return snapshots

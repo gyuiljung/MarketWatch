@@ -61,8 +61,8 @@ class V8SignalAnalyzer:
     """
 
     # Factor categorization
-    KOREAN_KEYWORDS = ['한국', 'KRW', 'KOSPI', 'KTB', 'NDF', 'TP ']
-    OVERSEAS_KEYWORDS = ['미국', 'US', 'JP', 'EU', 'CN', '달러', 'VIX', 'S&P']
+    KOREAN_KEYWORDS = ['한국', 'KRW', 'KOSPI', '코스피', 'KTB', '국고', 'NDF', 'TP ', '원화', 'KR']
+    OVERSEAS_KEYWORDS = ['미국', 'US', 'JP', 'EU', 'CN', '달러', 'VIX', 'S&P', '일본', '중국', '유럽', '독일']
 
     # Z-score thresholds
     Z_THRESHOLD = 1.5  # Activation threshold

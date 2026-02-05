@@ -123,7 +123,7 @@ class Visualizer:
         return 'OTHER'
 
     def _draw_network(self, ax, snapshot: NetworkSnapshot) -> None:
-        """Draw network graph panel."""
+        """Draw network graph panel with V8 signal colors on edges."""
         ax.set_facecolor(self.colors['panel'])
 
         mst = snapshot.mst
@@ -134,17 +134,33 @@ class Visualizer:
 
         pos = nx.kamada_kawai_layout(mst)
 
+        # Check if V8 signals are present
+        has_v8 = any('v8_signal' in mst[u][v] for u, v in mst.edges())
+
         edge_colors = []
         edge_widths = []
         for u, v in mst.edges():
-            c = mst[u][v].get('corr', 0)
-            edge_widths.append(1 + abs(c) * 4)
-            edge_colors.append(
-                self.colors['safe'] if c > 0.6 else
-                (self.colors['warning'] if c > 0.3 else self.colors['grid'])
-            )
+            if has_v8 and 'v8_signal' in mst[u][v]:
+                # V8 signal-based coloring: green=bullish, red=bearish, gray=neutral
+                v8_sig = mst[u][v].get('v8_signal', 0)
+                if v8_sig > 0.2:
+                    edge_colors.append('#3fb950')  # green - bullish
+                elif v8_sig < -0.2:
+                    edge_colors.append('#f85149')  # red - bearish
+                else:
+                    edge_colors.append('#8b949e')  # gray - neutral
+                # Width based on signal strength
+                edge_widths.append(2 + abs(v8_sig) * 6)
+            else:
+                # Fallback to correlation-based coloring
+                c = mst[u][v].get('corr', 0)
+                edge_widths.append(1 + abs(c) * 4)
+                edge_colors.append(
+                    self.colors['safe'] if c > 0.6 else
+                    (self.colors['warning'] if c > 0.3 else self.colors['grid'])
+                )
 
-        nx.draw_networkx_edges(mst, pos, ax=ax, width=edge_widths, edge_color=edge_colors, alpha=0.7)
+        nx.draw_networkx_edges(mst, pos, ax=ax, width=edge_widths, edge_color=edge_colors, alpha=0.8)
         nx.draw_networkx_nodes(mst, pos, ax=ax, node_color=node_colors, node_size=node_sizes,
                               alpha=0.9, edgecolors='white', linewidths=2)
         nx.draw_networkx_labels(mst, pos, ax=ax, font_size=9, font_color='white', font_weight='bold')
@@ -156,13 +172,18 @@ class Visualizer:
                 ax.annotate(f'#{rank}', xy=(x, y), xytext=(x+0.08, y+0.08),
                            fontsize=14, color=self.colors['danger'], fontweight='bold')
 
-        ax.set_title(f"CURRENT NETWORK (Top Hub: {snapshot.top_hub_bt})",
-                    fontsize=12, fontweight='bold', color=self.colors['text'])
+        title = f"CURRENT NETWORK (Top Hub: {snapshot.top_hub_bt})"
+        if has_v8:
+            title += " [V8 Signal]"
+        ax.set_title(title, fontsize=12, fontweight='bold', color=self.colors['text'])
         ax.axis('off')
 
-        # Legend
+        # Legend - add V8 signal legend if present
         legend = [mpatches.Patch(facecolor=c, label=cat) for cat, c in self.cat_colors.items()]
-        ax.legend(handles=legend, loc='lower left', fontsize=8,
+        if has_v8:
+            legend.append(mpatches.Patch(facecolor='#3fb950', label='V8 Bullish', alpha=0.8))
+            legend.append(mpatches.Patch(facecolor='#f85149', label='V8 Bearish', alpha=0.8))
+        ax.legend(handles=legend, loc='lower left', fontsize=7, ncol=2,
                  facecolor=self.colors['panel'], labelcolor=self.colors['text'])
 
     def _draw_metrics(self, ax, snapshot: NetworkSnapshot, indicators: pd.DataFrame) -> None:
