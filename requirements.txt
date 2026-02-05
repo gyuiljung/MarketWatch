@@ -1,0 +1,17 @@
+# Market Monitor Dependencies
+# Core
+pandas>=1.5.0
+numpy>=1.21.0
+openpyxl>=3.0.0
+
+# Network Analysis
+networkx>=2.8.0
+
+# Visualization
+matplotlib>=3.5.0
+
+# Configuration
+pyyaml>=6.0
+
+# Optional: Statistical analysis
+scipy>=1.9.0
