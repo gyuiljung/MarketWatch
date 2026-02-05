@@ -72,6 +72,19 @@ Examples:
     v8_parser.add_argument('-v', '--verbose', action='store_true',
                           help='Verbose output with factor details')
 
+    # Factor network command
+    fn_parser = subparsers.add_parser('factor-network', help='Analyze V8DB factor network')
+    fn_parser.add_argument('-d', '--v8db', type=Path,
+                          help='Path to V8DB_daily.xlsx')
+    fn_parser.add_argument('--bm', choices=['kospi', '3ybm'], default='kospi',
+                          help='Benchmark to analyze (default: kospi)')
+    fn_parser.add_argument('--window', type=int, default=60,
+                          help='Correlation window in days (default: 60)')
+    fn_parser.add_argument('--with-signal', action='store_true',
+                          help='Include signal influence analysis')
+    fn_parser.add_argument('-v', '--verbose', action='store_true',
+                          help='Verbose output')
+
     # Version command
     parser.add_argument('--version', action='store_true', help='Show version')
 
@@ -88,6 +101,8 @@ Examples:
         return validate_config(args)
     elif args.command == 'v8-signal':
         return run_v8_signal(args)
+    elif args.command == 'factor-network':
+        return run_factor_network(args)
     else:
         parser.print_help()
         return 0
@@ -304,6 +319,69 @@ def run_v8_signal(args) -> int:
                     print(f"  {f.name[:35]:35s} Z={f.z_score:+5.2f} C={f.contribution:+.3f} T+{f.t_plus}")
 
         print("\n" + "=" * 60)
+        return 0
+
+    except MarketMonitorError as e:
+        logger.error(str(e))
+        print(f"\nError: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        logger.exception("Unexpected error")
+        print(f"\nUnexpected error: {e}", file=sys.stderr)
+        return 1
+
+
+def run_factor_network(args) -> int:
+    """Run factor network analysis."""
+    import logging
+    from .utils.logging import setup_logging
+    from .analysis.factor_network import FactorNetworkAnalyzer
+    from .analysis.v8_signal import V8SignalAnalyzer
+    from .core.exceptions import MarketMonitorError
+
+    # Setup logging
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    setup_logging(level=log_level)
+    logger = logging.getLogger(__name__)
+
+    print("=" * 60)
+    print("  V8 FACTOR NETWORK ANALYSIS")
+    print("=" * 60)
+
+    try:
+        # Initialize analyzer
+        fn_analyzer = FactorNetworkAnalyzer(v8db_path=args.v8db)
+
+        # Analyze network
+        print(f"\n[1/2] Analyzing factor network ({args.bm})...")
+        snapshot = fn_analyzer.analyze(bm=args.bm, window=args.window)
+
+        print(f"  Factors: {snapshot.factor_count}")
+        print(f"  Top Hub: {snapshot.top_hub}")
+        print(f"  Network Sync: {snapshot.network_sync:.4f}")
+
+        # Signal influence analysis
+        influences = None
+        if args.with_signal:
+            print(f"\n[2/2] Computing signal influence...")
+            v8_analyzer = V8SignalAnalyzer(v8db_path=args.v8db)
+            signal = v8_analyzer.compute_signal(args.bm)
+
+            # Build z_scores and contributions
+            z_scores = {f.name: f.z_score for f in signal.active_factors}
+            contributions = {f.name: f.contribution for f in signal.active_factors}
+
+            influences = fn_analyzer.analyze_hub_influence(snapshot, z_scores, contributions)
+
+            # Signal reliability
+            level, score, explanation = fn_analyzer.get_signal_reliability(snapshot, z_scores)
+            print(f"\n  Signal Reliability: {level} ({score:.2f})")
+            print(f"  Reason: {explanation}")
+
+        # Print summary
+        summary = fn_analyzer.get_summary(snapshot, influences)
+        print("\n" + summary)
+
         return 0
 
     except MarketMonitorError as e:
