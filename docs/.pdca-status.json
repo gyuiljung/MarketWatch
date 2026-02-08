@@ -1,0 +1,53 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2026-02-05T10:30:00.000Z",
+  "activeFeatures": ["code-review-enhancement"],
+  "primaryFeature": "code-review-enhancement",
+  "features": {
+    "code-review-enhancement": {
+      "phase": "completed",
+      "startedAt": "2026-02-04T17:15:00.000Z",
+      "lastActivity": "2026-02-05T11:00:00.000Z",
+      "matchRate": 95,
+      "iterationCount": 1,
+      "documents": {
+        "plan": "docs/01-plan/features/code-review-enhancement.plan.md",
+        "design": "docs/02-design/features/code-review-enhancement.design.md",
+        "analysis": "docs/03-analysis/code-review-enhancement.analysis.md",
+        "report": "docs/04-report/features/code-review-enhancement.report.md"
+      }
+    }
+  },
+  "history": [
+    {
+      "timestamp": "2026-02-04T17:15:00.000Z",
+      "feature": "code-review-enhancement",
+      "action": "plan_created",
+      "details": "Market Watch 코드 재점검 및 완성도 향상 Plan 작성 완료"
+    },
+    {
+      "timestamp": "2026-02-04T17:20:00.000Z",
+      "feature": "code-review-enhancement",
+      "action": "design_created",
+      "details": "모듈 분리 및 상세 인터페이스 Design 작성 완료"
+    },
+    {
+      "timestamp": "2026-02-05T10:30:00.000Z",
+      "feature": "code-review-enhancement",
+      "action": "do_completed",
+      "details": "모듈형 패키지 구조 구현 완료 (v2.4.0)"
+    },
+    {
+      "timestamp": "2026-02-05T10:45:00.000Z",
+      "feature": "code-review-enhancement",
+      "action": "check_completed",
+      "details": "Gap Analysis 완료 - Match Rate: 95%"
+    },
+    {
+      "timestamp": "2026-02-05T11:00:00.000Z",
+      "feature": "code-review-enhancement",
+      "action": "report_completed",
+      "details": "PDCA 완료 보고서 생성"
+    }
+  ]
+}
