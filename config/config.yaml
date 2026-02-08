@@ -1,0 +1,203 @@
+# ==============================================================================
+# MARKET WATCH - Unified Configuration
+# ==============================================================================
+# market_monitor config_clustered.yaml 기반 + V8 통합
+
+# ------------------------------------------------------------------------------
+# Core Assets (항상 네트워크에 포함)
+# ------------------------------------------------------------------------------
+core_assets:
+  # FX
+  USDKRW: "종합 USDKRW 스팟 (~15:30)"
+  USDJPY: "이종통화 종합 JPY"
+  DXY: "달러인덱스 DOLLARS"
+  EURUSD: "이종통화 종합 EUR"
+
+  # Equity
+  SPX: "S&P 500"
+  NKY: "니케이 225"
+  KOSPI: "코스피"
+
+  # Volatility
+  VIX: "CBOE VIX VOLATILITY INDEX"
+
+  # Commodities
+  GOLD: "금 2026-2 (연결선물)"
+  WTI: "WTI 현물"
+
+# ------------------------------------------------------------------------------
+# Clusters (카테고리별 그룹, representative가 네트워크 대표)
+# ------------------------------------------------------------------------------
+clusters:
+  IR_KR:
+    representative: KTB_10Y
+    assets:
+      KTB_2Y: "금투협 장외거래대표수익률 국고채권(2년)"
+      KTB_10Y: "금투협 장외거래대표수익률 국고채권(10년)"
+      KTB_30Y: "금투협 장외거래대표수익률 국고채권(30년)"
+    color: "#58a6ff"
+
+  IR_JP:
+    representative: JGB_10Y
+    assets:
+      JGB_2Y: "일본 2년"
+      JGB_10Y: "일본 10년"
+      JGB_30Y: "일본 30년"
+    color: "#f78166"
+
+  IR_US:
+    representative: UST_10Y
+    assets:
+      UST_2Y: "미국(종합) 2년"
+      UST_10Y: "미국(종합) 10년"
+      UST_30Y: "미국(종합) 30년"
+    color: "#a5d6ff"
+
+  IR_EU:
+    representative: Bund_10Y
+    assets:
+      Bund_10Y: "독일 10년"
+    color: "#d2a8ff"
+
+  EQ_ASIA:
+    representative: HSI
+    assets:
+      HSI: "항셍"
+      DAX: "독일 DAX30"
+    color: "#7ee787"
+
+# ------------------------------------------------------------------------------
+# 금리 자산 (log return 대신 diff 사용)
+# ------------------------------------------------------------------------------
+rate_assets:
+  - KTB_2Y
+  - KTB_10Y
+  - KTB_30Y
+  - JGB_2Y
+  - JGB_10Y
+  - JGB_30Y
+  - UST_2Y
+  - UST_10Y
+  - UST_30Y
+  - Bund_10Y
+
+# ------------------------------------------------------------------------------
+# 카테고리 분류 (시각화용)
+# ------------------------------------------------------------------------------
+categories:
+  EQ:    [SPX, NKY, HSI, DAX, KOSPI]
+  FX:    [USDKRW, USDJPY, DXY, EURUSD]
+  IR_JP: [JGB_2Y, JGB_10Y, JGB_30Y]
+  IR_KR: [KTB_2Y, KTB_10Y, KTB_30Y]
+  IR_US: [UST_2Y, UST_10Y, UST_30Y, Bund_10Y]
+  VOL:   [VIX]
+  CMD:   [GOLD, WTI]
+
+# 카테고리 색상
+core_categories:
+  FX:  [USDKRW, USDJPY, DXY, EURUSD]
+  EQ:  [SPX, NKY, KOSPI]
+  VOL: [VIX]
+  CMD: [GOLD, WTI]
+
+core_colors:
+  FX:  "#f85149"
+  EQ:  "#3fb950"
+  VOL: "#8b949e"
+  CMD: "#d29922"
+
+category_colors:
+  EQ:    "#3fb950"
+  FX:    "#f85149"
+  IR_JP: "#f78166"
+  IR_KR: "#58a6ff"
+  IR_US: "#a5d6ff"
+  VOL:   "#8b949e"
+  CMD:   "#d29922"
+
+# ------------------------------------------------------------------------------
+# Key Pairs (상관 추적 대상)
+# ------------------------------------------------------------------------------
+key_pairs:
+  - [USDJPY, NKY]
+  - [USDKRW, USDJPY]
+  - [JGB_10Y, KTB_10Y]
+  - [UST_10Y, JGB_10Y]
+  - [Bund_10Y, UST_10Y]
+  - [SPX, VIX]
+  - [SPX, KOSPI]
+  - [GOLD, DXY]
+
+# ------------------------------------------------------------------------------
+# 분석 파라미터
+# ------------------------------------------------------------------------------
+analysis:
+  windows: [5, 20, 60]
+  step: 5
+  rv_window: 5
+  lookback: 252
+  hub_window: 60
+  te_window_short: 60
+  te_window_long: 252
+  tail_window: 252
+  corr_window: 60
+  corr_change_lookback: 20
+  impulse_window: 60
+  impulse_max_lag: 5
+
+# ------------------------------------------------------------------------------
+# Transfer Entropy 파라미터 (개선: 10-bin, multi-lag, 100 surrogates)
+# ------------------------------------------------------------------------------
+transfer_entropy:
+  bins: 10                # 6 → 10 (적응형 quantile)
+  max_lag: 5              # 1 → 1~5 스캔
+  n_surrogates: 100       # 30 → 100 (p-value 안정성)
+  alpha: 0.05
+  top_n: 15
+
+# ------------------------------------------------------------------------------
+# Thresholds
+# ------------------------------------------------------------------------------
+thresholds:
+  sync_warning: 0.20
+  rv_extreme: 90
+  rv_elevated: 75
+
+# ------------------------------------------------------------------------------
+# V8 통합 (신규)
+# ------------------------------------------------------------------------------
+v8:
+  project_path: "C:/Users/Q1/Documents/Claude/v5"
+  config_files:
+    kospi: "output_v3/final_kospi_daily_LO_SO_LS_v8.csv"
+    3ybm: "output_v3/final_3ybm_daily_LO_SO_LS_v8.csv"
+  enabled: true
+
+# ------------------------------------------------------------------------------
+# 시각화 설정
+# ------------------------------------------------------------------------------
+visualization:
+  colors:
+    bg: "#0d1117"
+    panel: "#161b22"
+    text: "#e6edf3"
+    grid: "#30363d"
+    danger: "#f85149"
+    warning: "#d29922"
+    safe: "#3fb950"
+    accent: "#58a6ff"
+  figsize: [28, 24]
+  dpi: 150
+  heatmap_days: 90
+  core_node_size: 800
+  cluster_node_size: 300
+
+# ------------------------------------------------------------------------------
+# 출력 설정
+# ------------------------------------------------------------------------------
+output:
+  report_prefix: "marketwatch_report"
+  dashboard_prefix: "marketwatch_dashboard"
+  save_indicators: true
+  save_report: true
+  save_dashboard: true
