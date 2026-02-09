@@ -941,9 +941,6 @@ function renderFlowScoreboard(categories, period) {
   const inflow = groups.filter(g => getVal(g) >= 0).sort((a, b) => getVal(b) - getVal(a));
   const outflow = groups.filter(g => getVal(g) < 0).sort((a, b) => getVal(a) - getVal(b));
 
-  document.getElementById('inflow-count').textContent = `${inflow.length}`;
-  document.getElementById('outflow-count').textContent = `${outflow.length}`;
-
   // Update panel titles
   document.querySelector('#inflow-panel .flow-panel-title').innerHTML = `🔺 GAINERS (${pLabel}+) <span class="count">${inflow.length}</span>`;
   document.querySelector('#outflow-panel .flow-panel-title').innerHTML = `🔻 LOSERS (${pLabel}-) <span class="count">${outflow.length}</span>`;
@@ -1006,25 +1003,41 @@ document.getElementById('period-selector').addEventListener('click', (e) => {
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderFlowScoreboard(null, btn.dataset.period);
+  renderTopMovers(null, btn.dataset.period);
 });
 
 // ── Top Movers Strip ──
-function renderTopMovers(topMovers) {
+let _cachedTopMovers = null;
+const PERIOD_TO_COL = {d1:'1D %', d5:'1W %', d30:'1M %', d90:'3M %', d180:'6M %', d365:'1Y %'};
+
+function renderTopMovers(topMovers, period) {
+  if (topMovers) _cachedTopMovers = topMovers;
+  const data = _cachedTopMovers;
   const el = document.getElementById('top-movers');
-  if (!topMovers) { el.style.display = 'none'; return; }
+  if (!data) { el.style.display = 'none'; return; }
 
-  const gainers = topMovers.gainers || [];
-  const losers = topMovers.losers || [];
-  if (gainers.length === 0 && losers.length === 0) { el.style.display = 'none'; return; }
+  period = period || _currentPeriod;
+  const col = PERIOD_TO_COL[period] || '1W %';
+  const pLabel = PERIOD_LABELS[period] || '1W';
 
-  let html = '<div class="top-movers-label">TOP MOVERS</div>';
+  // 모든 티커를 합쳐서 선택된 기간 기준으로 재정렬
+  const all = [...(data.gainers || []), ...(data.losers || [])].filter(m => m[col] != null && !isNaN(m[col]));
+  if (all.length === 0) { el.style.display = 'none'; return; }
+
+  all.sort((a, b) => (b[col] || 0) - (a[col] || 0));
+  const n = Math.min(5, Math.floor(all.length / 2)) || 1;
+  const gainers = all.slice(0, n);
+  const losers = all.slice(-n).reverse();
+
+  let html = `<div class="top-movers-label">TOP MOVERS (${pLabel})</div>`;
 
   gainers.forEach(m => {
-    const bg = heatColor(m['1W %'], 8);
-    const tc = textColor(m['1W %'], 8);
+    const v = m[col] || 0;
+    const bg = heatColor(v, 8);
+    const tc = textColor(v, 8);
     html += `<div class="mover-card" style="background:${bg}">
       <div class="ticker" style="color:${tc}">${m.Ticker}</div>
-      <div class="pct" style="color:#4ade80">${fmtPctPlain(m['1W %'])}%</div>
+      <div class="pct" style="color:#4ade80">${fmtPctPlain(v)}%</div>
       <div class="name">${m.Name || ''}</div>
     </div>`;
   });
@@ -1034,11 +1047,12 @@ function renderTopMovers(topMovers) {
   }
 
   losers.forEach(m => {
-    const bg = heatColor(m['1W %'], 8);
-    const tc = textColor(m['1W %'], 8);
+    const v = m[col] || 0;
+    const bg = heatColor(v, 8);
+    const tc = textColor(v, 8);
     html += `<div class="mover-card" style="background:${bg}">
       <div class="ticker" style="color:${tc}">${m.Ticker}</div>
-      <div class="pct" style="color:#f87171">${fmtPctPlain(m['1W %'])}%</div>
+      <div class="pct" style="color:#f87171">${fmtPctPlain(v)}%</div>
       <div class="name">${m.Name || ''}</div>
     </div>`;
   });

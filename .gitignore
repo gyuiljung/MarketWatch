@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 /output/
 *.xlsx
+flow_monitor_*.json
+flow_monitor_*.csv
+flow_dashboard_*.html
+nul

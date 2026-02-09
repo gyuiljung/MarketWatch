@@ -1,0 +1,48 @@
+name: Build & Deploy Dashboard
+
+on:
+  schedule:
+    # 매일 23:00 UTC = 08:00 KST (미국 장마감 후)
+    - cron: '0 23 * * 1-5'
+  workflow_dispatch: # 수동 실행 가능
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance pandas tabulate requests
+
+      - name: Build standalone HTML
+        run: python build_standalone.py -o index.html
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir _site
+          cp index.html _site/
+
+      - uses: actions/upload-pages-artifact@v3
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

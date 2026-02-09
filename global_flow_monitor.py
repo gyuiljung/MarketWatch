@@ -34,6 +34,13 @@ import sys
 import os
 import json
 
+# Windows cp949 콘솔 이모지 깨짐 방지
+if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 # IA-08: pykrx — optional (개인 매수 효율 계산용)
 try:
     from pykrx import stock as krx_stock
@@ -1476,3 +1483,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     run_dashboard(detail=args.detail, export=not args.no_export)
+
+    # export 시 standalone HTML 자동 빌드 (file://로 바로 열림)
+    if not args.no_export:
+        try:
+            from build_standalone import build_standalone
+            out = build_standalone()
+            print(f"  🌐 standalone HTML: {out} (브라우저에서 바로 열기 가능)")
+        except Exception as e:
+            print(f"  ⚠️  standalone 빌드 실패: {e}")
