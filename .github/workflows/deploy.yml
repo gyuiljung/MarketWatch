@@ -35,6 +35,8 @@ jobs:
 
       - name: Build standalone HTML
         run: python build_standalone.py -o index.html
+        env:
+          TZ: Asia/Seoul
 
       - name: Prepare Pages artifact
         run: |
