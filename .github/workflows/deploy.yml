@@ -2,8 +2,8 @@ name: Build & Deploy Dashboard
 
 on:
   schedule:
-    # 매일 23:00 UTC = 08:00 KST (미국 장마감 후)
-    - cron: '0 23 * * 1-5'
+    # 일~목 23:00 UTC = 월~금 08:00 KST (미국 장마감 후)
+    - cron: '0 23 * * 0-4'
   workflow_dispatch: # 수동 실행 가능
 
 permissions:
