@@ -79,26 +79,36 @@ CATEGORIES = {
         'groups': {
             'DM Americas': {
                 'SPY': {'name': 'S&P 500'},
+                'EWC': {'name': 'MSCI Canada'},
             },
             'DM Europe': {
-                'EFA': {'name': 'EAFE (Europe/Asia)'},
+                'VGK': {'name': 'FTSE Europe'},
+                'EWU': {'name': 'MSCI UK'},
                 'EWG': {'name': 'MSCI Germany'},
             },
-            'DM Asia': {
+            'DM Asia-Pac': {
                 'EWJ': {'name': 'MSCI Japan'},
+                'EWA': {'name': 'MSCI Australia'},
+                'EWH': {'name': 'MSCI Hong Kong'},
+                'EWS': {'name': 'MSCI Singapore'},
             },
             'EM Asia': {
                 'FXI': {'name': 'China Large Cap'},
                 'EWY': {'name': 'MSCI Korea'},
                 'EWT': {'name': 'MSCI Taiwan'},
                 'INDA': {'name': 'MSCI India'},
+                'EIDO': {'name': 'MSCI Indonesia'},
             },
             'EM Latam': {
                 'EWZ': {'name': 'MSCI Brazil'},
+                'EWW': {'name': 'MSCI Mexico'},
             },
             'EM Broad': {
                 'EEM': {'name': 'iShares EM'},
                 'VWO': {'name': 'Vanguard EM'},
+            },
+            'DM Broad': {
+                'EFA': {'name': 'EAFE (DM ex-US)'},
             },
         },
     },
@@ -110,18 +120,22 @@ CATEGORIES = {
                 'SMH': {'name': 'VanEck Semi'},
                 'SOXX': {'name': 'iShares Semi'},
             },
+            'AI / Robotics': {
+                'BOTZ': {'name': 'Global Robotics & AI'},
+                'IRBO': {'name': 'iShares Robotics & AI'},
+            },
+            'Clean Energy': {
+                'ICLN': {'name': 'Global Clean Energy'},
+                'TAN': {'name': 'Solar'},
+            },
             'Biotech': {
                 'XBI': {'name': 'Biotech SPDR'},
             },
-            'Disruptive': {
+            'Innovation': {
                 'ARKK': {'name': 'ARK Innovation'},
             },
             'China Tech': {
                 'KWEB': {'name': 'China Internet'},
-            },
-            'Leverage': {
-                'SOXL': {'name': 'Semi 3x Bull'},
-                'SOXS': {'name': 'Semi 3x Bear'},
             },
         },
     },
@@ -134,31 +148,52 @@ CATEGORIES = {
             },
             'Safe Haven': {
                 'GLD': {'name': 'Gold'},
-                'TLT': {'name': '20Y+ Treasury'},
-                'SHY': {'name': '1-3Y Treasury'},
             },
             'Commodities': {
                 'USO': {'name': 'WTI Oil'},
+                'SLV': {'name': 'Silver'},
+                'COPX': {'name': 'Copper Miners'},
+                'DBA': {'name': 'Agriculture'},
             },
             'FX': {
                 'UUP': {'name': 'USD Index'},
                 'FXY': {'name': 'Yen ETF'},
+                'FXE': {'name': 'Euro ETF'},
             },
             'Credit': {
                 'HYG': {'name': 'High Yield Corp'},
                 'LQD': {'name': 'Inv Grade Corp'},
             },
-            'Inflation': {
-                'TIP': {'name': 'TIPS Bond'},
+            'Leverage': {
+                'TQQQ': {'name': 'Nasdaq 3x Bull'},
+                'SQQQ': {'name': 'Nasdaq 3x Bear'},
+                'SOXL': {'name': 'Semi 3x Bull'},
+                'SOXS': {'name': 'Semi 3x Bear'},
+                'UPRO': {'name': 'S&P 3x Bull'},
+                'UVXY': {'name': 'VIX 1.5x Long'},
+                'TMF': {'name': '20Y Bond 3x Bull'},
+                'TBT': {'name': '20Y Bond 2x Bear'},
             },
         },
     },
     'bonds_fx': {
-        'label': 'Bonds & FX',
+        'label': 'Bonds & Rates',
         'icon': '🏦',
         'groups': {
+            'US Curve': {
+                'SHY': {'name': '1-3Y Treasury'},
+                'IEF': {'name': '7-10Y Treasury'},
+                'TLT': {'name': '20Y+ Treasury'},
+            },
+            'Inflation': {
+                'TIP': {'name': 'TIPS Bond'},
+            },
             'Aggregate': {
                 'AGG': {'name': 'US Agg Bond'},
+                'BND': {'name': 'Total Bond Market'},
+            },
+            'EM Bonds': {
+                'EMB': {'name': 'EM USD Bond'},
             },
         },
     },
@@ -166,11 +201,14 @@ CATEGORIES = {
 
 # 필수 티커 — 복합 시그널 판단에 반드시 필요
 REQUIRED_TICKERS = [
-    'SMH', 'SOXX',       # 반도체 로테이션
-    'EWY', 'EEM',         # EM 상대 성과
-    '^VIX', 'GLD', 'USO', 'UUP', 'FXY',  # 리스크 시그널
-    'HYG', 'LQD',         # 크레딧 스프레드
-    'SPY', 'EFA',          # US Exceptionalism
+    'SMH', 'SOXX',                          # 반도체 로테이션
+    'EWY', 'EEM',                            # EM 상대 성과
+    '^VIX', 'GLD', 'USO', 'UUP', 'FXY',     # 리스크 시그널
+    'HYG', 'LQD',                            # 크레딧 스프레드
+    'SPY', 'EFA',                            # US Exceptionalism
+    'COPX',                                  # 경기 선행
+    'SHY', 'IEF', 'TLT',                    # 수익률 커브
+    'VGK', 'EWJ', 'EWA',                    # DM 지역별
 ]
 
 
@@ -214,12 +252,12 @@ def print_missing_warning(missing):
 # 데이터 수집 — 배치 (v2.0)
 # ============================================================
 
-def fetch_all_data(days=35):
+def fetch_all_data(days=400):
     """yf.download() 배치 수집 → 카테고리별 분할 반환.
 
     Returns:
         (category_data, errors, meta)
-        category_data: {cat_key: DataFrame}  — 각 DF에 Ticker,Name,Group,1D%,5D%,...
+        category_data: {cat_key: DataFrame}  — 각 DF에 Ticker,Name,Group,1D%,1W%,1M%,3M%,6M%,1Y%,...
         errors: list of failed tickers
         meta: {'last_date', 'first_date', 'd5_refs'}
     """
@@ -281,19 +319,26 @@ def fetch_all_data(days=35):
             if meta['first_date'] is None or first_date < meta['first_date']:
                 meta['first_date'] = first_date
 
-            # 5D 참조
+            # 기간별 수익률 계산 (trading days 기준)
+            def _ret(n):
+                if len(close) > n:
+                    ref = close.iloc[-(n+1)]
+                    return round((last - ref) / ref * 100, 2)
+                return None
+
+            d1_ret = round((last - prev) / prev * 100, 2) if len(close) >= 2 else None
+            d5_ret = _ret(5)     # 1W
+            d21_ret = _ret(21)   # 1M
+            d63_ret = _ret(63)   # 3M
+            d126_ret = _ret(126) # 6M
+            d252_ret = _ret(252) # 1Y
+
+            # 5D 참조일
             if len(close) >= 6:
-                d5_price = close.iloc[-6]
                 d5_ref_date = close.index[-6].strftime('%m-%d')
             else:
-                d5_price = first
                 d5_ref_date = close.index[0].strftime('%m-%d') + '*'
             meta['d5_refs'][ticker] = d5_ref_date
-
-            # 수익률
-            d1_ret = round((last - prev) / prev * 100, 2)
-            d5_ret = round((last - d5_price) / d5_price * 100, 2)
-            d30_ret = round((last - first) / first * 100, 2)
 
             # Z-score
             z_5d = None
@@ -301,7 +346,7 @@ def fetch_all_data(days=35):
                 rolling_5d = close.pct_change(5) * 100
                 rolling_5d = rolling_5d.dropna()
                 if len(rolling_5d) >= 5 and rolling_5d.std() > 0:
-                    z_5d = round((d5_ret - rolling_5d.mean()) / rolling_5d.std(), 2)
+                    z_5d = round(((d5_ret or 0) - rolling_5d.mean()) / rolling_5d.std(), 2)
 
             # 거래량 변화 + 평균 일일 달러 거래량
             vol = hist.get('Volume')
@@ -323,10 +368,13 @@ def fetch_all_data(days=35):
                 'Name': info['name'],
                 'Last': round(float(last), 2),
                 '1D %': d1_ret,
-                '5D %': d5_ret,
+                '1W %': d5_ret,
+                '1M %': d21_ret,
+                '3M %': d63_ret,
+                '6M %': d126_ret,
+                '1Y %': d252_ret,
                 '5D Ref': d5_ref_date,
                 '5D Z': z_5d,
-                '30D %': d30_ret,
                 'Vol Δ%': vol_change,
                 'AvgDolVol': avg_dol_vol,
             }
@@ -350,7 +398,238 @@ def fetch_all_data(days=35):
         if cat_rows:
             category_data[cat_key] = pd.DataFrame(cat_rows)
 
+    # 일간 Close + Volume 시계열 보존 (TE 계산용)
+    close_series = {}
+    volume_series = {}
+    for ticker in ticker_list:
+        try:
+            if len(ticker_list) == 1:
+                hist = raw
+            else:
+                if ticker not in raw.columns.get_level_values(0):
+                    continue
+                hist = raw[ticker].dropna(how='all')
+            if hist is not None and len(hist) >= 2:
+                close_series[ticker] = hist['Close'].dropna()
+                if 'Volume' in hist.columns:
+                    vol = hist['Volume'].dropna()
+                    if len(vol) >= 2:
+                        volume_series[ticker] = vol
+        except Exception:
+            pass
+
+    meta['close_series'] = close_series
+    meta['volume_series'] = volume_series
     return category_data, errors, meta
+
+
+# ============================================================
+# 그룹 일간 수익률 + Transfer Entropy
+# ============================================================
+
+def build_group_returns(close_series, window=252):
+    """티커별 Close → 그룹 평균 일간 수익률 DataFrame.
+
+    Returns:
+        pd.DataFrame — columns=그룹명, index=날짜, values=일간 수익률
+    """
+    # Bull+Bear 평균 → 노이즈. TE 분석에서 의미 없는 그룹 제외.
+    TE_EXCLUDE_GROUPS = {'Leverage', 'Volatility'}
+
+    # 티커 → 그룹 매핑
+    ticker_to_group = {}
+    for cat_key, cat in CATEGORIES.items():
+        for grp_name, grp_tickers in cat['groups'].items():
+            if grp_name in TE_EXCLUDE_GROUPS:
+                continue
+            for ticker in grp_tickers:
+                ticker_to_group[ticker] = grp_name
+
+    # 티커별 일간 수익률
+    ret_frames = {}
+    for ticker, close in close_series.items():
+        grp = ticker_to_group.get(ticker)
+        if grp is None or len(close) < 10:
+            continue
+        ret = close.pct_change().dropna()
+        if grp not in ret_frames:
+            ret_frames[grp] = []
+        ret_frames[grp].append(ret)
+
+    # 그룹 평균
+    group_returns = {}
+    for grp, rets in ret_frames.items():
+        combined = pd.concat(rets, axis=1).mean(axis=1)
+        group_returns[grp] = combined
+
+    df = pd.DataFrame(group_returns).dropna()
+    if len(df) > window:
+        df = df.iloc[-window:]
+    return df
+
+
+def build_group_flow_returns(close_series, volume_series, window=252):
+    """Dollar volume (Close × Volume) 변화율 → 그룹 평균. 자금 흐름 proxy.
+
+    Returns:
+        pd.DataFrame — columns=그룹명, index=날짜, values=dollar volume 일간 변화율
+    """
+    TE_EXCLUDE_GROUPS = {'Leverage', 'Volatility'}
+
+    ticker_to_group = {}
+    for cat_key, cat in CATEGORIES.items():
+        for grp_name, grp_tickers in cat['groups'].items():
+            if grp_name in TE_EXCLUDE_GROUPS:
+                continue
+            for ticker in grp_tickers:
+                ticker_to_group[ticker] = grp_name
+
+    ret_frames = {}
+    for ticker, close in close_series.items():
+        grp = ticker_to_group.get(ticker)
+        vol = volume_series.get(ticker)
+        if grp is None or vol is None or len(close) < 10:
+            continue
+        # Dollar volume = Close × Volume
+        common_idx = close.index.intersection(vol.index)
+        if len(common_idx) < 10:
+            continue
+        dv = (close.loc[common_idx] * vol.loc[common_idx])
+        # 일간 변화율 (log return으로 안정화)
+        import numpy as np
+        dv_ret = np.log(dv / dv.shift(1)).replace([np.inf, -np.inf], np.nan).dropna()
+        if len(dv_ret) < 10:
+            continue
+        if grp not in ret_frames:
+            ret_frames[grp] = []
+        ret_frames[grp].append(dv_ret)
+
+    group_returns = {}
+    for grp, rets in ret_frames.items():
+        combined = pd.concat(rets, axis=1).mean(axis=1)
+        group_returns[grp] = combined
+
+    df = pd.DataFrame(group_returns).dropna()
+    if len(df) > window:
+        df = df.iloc[-window:]
+    return df
+
+
+def compute_group_te(group_returns, bins=10, max_lag=3, n_surrogates=50, alpha=0.05, top_n=15):
+    """그룹 간 Transfer Entropy 계산 (경량 버전).
+
+    Returns:
+        list of dict: [{'src': A, 'tgt': B, 'net_z': float, 'direction': 'A→B', 'best_lag': int}, ...]
+    """
+    import numpy as np
+
+    assets = list(group_returns.columns)
+    n_assets = len(assets)
+    T = len(group_returns)
+
+    if n_assets < 2 or T < 10:
+        return []
+
+    # Quantile 이산화
+    discretized = np.zeros((n_assets, T), dtype=int)
+    for i, col in enumerate(assets):
+        vals = group_returns[col].values
+        edges = np.percentile(vals, np.linspace(0, 100, bins + 1))
+        edges[-1] += 1e-10
+        discretized[i] = np.minimum(np.digitize(vals, edges[1:]), bins - 1)
+
+    def _te_matrix(disc, lag):
+        n, t = disc.shape
+        nn = t - lag
+        results = np.zeros((n, n))
+        for tgt in range(n):
+            tgt_f = disc[tgt, lag:]
+            tgt_p = disc[tgt, :-lag]
+            jyy = np.zeros((bins, bins))
+            for tt in range(nn):
+                jyy[tgt_f[tt], tgt_p[tt]] += 1
+            jyy /= nn
+            my = np.bincount(tgt_p[:nn], minlength=bins).astype(float) / nn
+
+            for src in range(n):
+                if src == tgt:
+                    continue
+                src_p = disc[src, :-lag]
+                jyyx = np.zeros((bins, bins, bins))
+                for tt in range(nn):
+                    jyyx[tgt_f[tt], tgt_p[tt], src_p[tt]] += 1
+                jyyx /= nn
+                myx = np.zeros((bins, bins))
+                for tt in range(nn):
+                    myx[tgt_p[tt], src_p[tt]] += 1
+                myx /= nn
+
+                te = 0.0
+                for yt in range(bins):
+                    for yp in range(bins):
+                        for xp in range(bins):
+                            p = jyyx[yt, yp, xp]
+                            if p > 1e-10 and jyy[yt, yp] > 1e-10 and myx[yp, xp] > 1e-10 and my[yp] > 1e-10:
+                                te += p * np.log2((p * my[yp]) / (myx[yp, xp] * jyy[yt, yp]))
+                results[src, tgt] = max(0, te)
+        return results
+
+    # Best lag scan
+    best_te = np.zeros((n_assets, n_assets))
+    best_lags = np.ones((n_assets, n_assets), dtype=int)
+    for lag in range(1, max_lag + 1):
+        te_m = _te_matrix(discretized, lag)
+        improved = te_m > best_te
+        best_te[improved] = te_m[improved]
+        best_lags[improved] = lag
+
+    # Surrogates
+    surr_te = np.zeros((n_surrogates, n_assets, n_assets))
+    for s in range(n_surrogates):
+        perm = np.random.permutation(T)
+        shuffled = discretized[:, perm]
+        surr_best = np.zeros((n_assets, n_assets))
+        for lag in range(1, max_lag + 1):
+            sm = _te_matrix(shuffled, lag)
+            improved = sm > surr_best
+            surr_best[improved] = sm[improved]
+        surr_te[s] = surr_best
+
+    te_mean = surr_te.mean(axis=0)
+    te_std = surr_te.std(axis=0) + 1e-10
+    te_z = (best_te - te_mean) / te_std
+
+    # Net flow for unique pairs
+    results = []
+    for i in range(n_assets):
+        for j in range(i + 1, n_assets):
+            z_ij = te_z[i, j]  # i→j
+            z_ji = te_z[j, i]  # j→i
+            net_z = z_ij - z_ji
+
+            if abs(net_z) < 1.5:
+                continue  # 약한 흐름 필터
+
+            if net_z > 0:
+                direction = f'{assets[i]}→{assets[j]}'
+                leader, follower = assets[i], assets[j]
+            else:
+                direction = f'{assets[j]}→{assets[i]}'
+                leader, follower = assets[j], assets[i]
+                net_z = -net_z
+
+            lag_val = int(best_lags[i, j] if net_z > 0 else best_lags[j, i])
+
+            results.append({
+                'leader': leader,
+                'follower': follower,
+                'direction': direction,
+                'net_z': round(float(net_z), 2),
+                'lag': lag_val,
+            })
+
+    results.sort(key=lambda x: x['net_z'], reverse=True)
+    return results[:top_n]
 
 
 # ============================================================
@@ -365,7 +644,7 @@ def compute_top_movers(category_data, n=5):
     Returns:
         {'gainers': [dict, ...], 'losers': [dict, ...]}
     """
-    EXCLUDE = {'^VIX', 'SOXL', 'SOXS'}
+    EXCLUDE = {'^VIX', 'SOXL', 'SOXS', 'TQQQ', 'SQQQ', 'UPRO', 'UVXY', 'TMF', 'TBT'}
 
     all_rows = []
     # cat_key → (icon, label) 매핑
@@ -377,15 +656,22 @@ def compute_top_movers(category_data, n=5):
             ticker = row['Ticker']
             if ticker in EXCLUDE:
                 continue
-            d5 = row.get('5D %')
+            d5 = row.get('1W %')
             if d5 is None or pd.isna(d5):
                 continue
+            def _safe(col):
+                v = row.get(col)
+                return round(float(v), 2) if v is not None and not pd.isna(v) else None
+
             all_rows.append({
                 'Ticker': ticker,
                 'Name': row.get('Name', ''),
-                '5D %': round(float(d5), 2),
-                '1D %': round(float(row.get('1D %', 0)), 2) if not pd.isna(row.get('1D %')) else None,
-                '30D %': round(float(row.get('30D %', 0)), 2) if not pd.isna(row.get('30D %')) else None,
+                '1D %': _safe('1D %'),
+                '1W %': round(float(d5), 2),
+                '1M %': _safe('1M %'),
+                '3M %': _safe('3M %'),
+                '6M %': _safe('6M %'),
+                '1Y %': _safe('1Y %'),
                 'group': row.get('Group', ''),
                 'cat_icon': icon,
             })
@@ -393,7 +679,7 @@ def compute_top_movers(category_data, n=5):
     if not all_rows:
         return {'gainers': [], 'losers': []}
 
-    sorted_rows = sorted(all_rows, key=lambda r: r['5D %'], reverse=True)
+    sorted_rows = sorted(all_rows, key=lambda r: r['1W %'], reverse=True)
     gainers = sorted_rows[:n]
     losers = sorted_rows[-n:][::-1]  # worst first (가장 나쁜 것부터)
 
@@ -405,7 +691,7 @@ def compute_group_summaries(category_data):
 
     Returns:
         {cat_key: {group_name: {
-            '1D %': avg, '5D %': avg, '30D %': avg,
+            '1D %': avg, '1W %': avg, '1M %': avg,
             'trading_impact': 추정 5D 편출입 ($, 양수=유입/음수=유출),
             'avg_dol_vol': 그룹 일평균 달러거래량 합계 ($)
         }}}
@@ -418,13 +704,20 @@ def compute_group_summaries(category_data):
         cat_summary = {}
         for grp_name in df['Group'].unique():
             grp = df[df['Group'] == grp_name]
-            d5_avg = round(grp['5D %'].mean(), 2)
+            d5_avg = round(grp['1W %'].mean(), 2)
             grp_dol_vol = grp['AvgDolVol'].sum() if 'AvgDolVol' in grp.columns else 0
             est_flow = round(grp_dol_vol * 5 * (d5_avg / 100), 0)
+            def _grp_mean(col):
+                s = grp[col].dropna() if col in grp.columns else pd.Series(dtype=float)
+                return round(s.mean(), 2) if len(s) > 0 else None
+
             cat_summary[grp_name] = {
-                '1D %': round(grp['1D %'].mean(), 2),
-                '5D %': d5_avg,
-                '30D %': round(grp['30D %'].mean(), 2),
+                '1D %': _grp_mean('1D %'),
+                '1W %': d5_avg,
+                '1M %': _grp_mean('1M %'),
+                '3M %': _grp_mean('3M %'),
+                '6M %': _grp_mean('6M %'),
+                '1Y %': _grp_mean('1Y %'),
                 'trading_impact': est_flow,
                 'avg_dol_vol': round(grp_dol_vol, 0),
             }
@@ -457,18 +750,21 @@ def compute_rotation_score(category_data):
     if len(semi) == 0 or len(defensive) == 0:
         return None
 
-    semi_avg = semi['5D %'].mean()
-    defensive_avg = defensive['5D %'].mean()
+    semi_avg = semi['1W %'].mean()
+    defensive_avg = defensive['1W %'].mean()
     score = round(defensive_avg - semi_avg, 2)
 
-    # Leverage 포함 비교 (검증용)
-    semi_all = thematic[thematic['Group'].isin(['Semiconductor', 'Leverage'])]
-    semi_all_no_bear = semi_all[~semi_all['Ticker'].isin(['SOXS'])]
+    # Leverage 포함 비교 (검증용 — SOXL만 semi 관련)
+    risk_data = category_data.get('risk_macro')
     score_meta = None
-    if len(semi_all_no_bear) > len(semi):
-        raw = round(defensive_avg - semi_all_no_bear['5D %'].mean(), 2)
-        dev = abs(raw - score) / abs(score) * 100 if score != 0 else 0
-        score_meta = {'raw_with_leverage': raw, 'deviation_pct': round(dev, 0)}
+    if risk_data is not None:
+        soxl = risk_data[risk_data['Ticker'] == 'SOXL']
+        if len(soxl) > 0:
+            import pandas as pd
+            semi_with_soxl = pd.concat([semi, soxl])
+            raw = round(defensive_avg - semi_with_soxl['1W %'].mean(), 2)
+            dev = abs(raw - score) / abs(score) * 100 if score != 0 else 0
+            score_meta = {'raw_with_leverage': raw, 'deviation_pct': round(dev, 0)}
 
     return score, score_meta
 
@@ -486,10 +782,10 @@ def compute_em_relative(category_data):
 
     relatives = []
     if len(korea) > 0 and len(em_broad) > 0:
-        ewy_5d = korea['5D %'].values[0]
-        eem_5d = em_broad['5D %'].values[0]
-        ewy_30d = korea['30D %'].values[0]
-        eem_30d = em_broad['30D %'].values[0]
+        ewy_5d = korea['1W %'].values[0]
+        eem_5d = em_broad['1W %'].values[0]
+        ewy_30d = korea['1M %'].values[0]
+        eem_30d = em_broad['1M %'].values[0]
 
         eem_ex_kr_5d = (eem_5d - ewy_5d * EWY_WEIGHT_IN_EEM) / (1 - EWY_WEIGHT_IN_EEM)
         eem_ex_kr_30d = (eem_30d - ewy_30d * EWY_WEIGHT_IN_EEM) / (1 - EWY_WEIGHT_IN_EEM)
@@ -501,18 +797,18 @@ def compute_em_relative(category_data):
         interp = '한국 EM 대비 강세' if diff_5d_adj > 0 else '한국 EM 대비 약세'
         relatives.append({
             'Pair': 'EWY vs EEM(보정)',
-            '5D 상대%': round(diff_5d_adj, 2),
-            '30D 상대%': round(diff_30d_adj, 2),
+            '1W 상대%': round(diff_5d_adj, 2),
+            '1M 상대%': round(diff_30d_adj, 2),
             '해석': f'{interp} (보정 전 {diff_5d_raw:+.1f}%)'
         })
 
     if len(korea) > 0 and len(taiwan) > 0:
-        diff_5d = korea['5D %'].values[0] - taiwan['5D %'].values[0]
-        diff_30d = korea['30D %'].values[0] - taiwan['30D %'].values[0]
+        diff_5d = korea['1W %'].values[0] - taiwan['1W %'].values[0]
+        diff_30d = korea['1M %'].values[0] - taiwan['1M %'].values[0]
         relatives.append({
             'Pair': 'EWY vs EWT',
-            '5D 상대%': round(diff_5d, 2),
-            '30D 상대%': round(diff_30d, 2),
+            '1W 상대%': round(diff_5d, 2),
+            '1M 상대%': round(diff_30d, 2),
             '해석': '한국 대만 대비 강세' if diff_5d > 0 else '한국 대만 대비 약세 (반도체 비중↑)'
         })
 
@@ -537,7 +833,7 @@ def compute_risk_dashboard(category_data):
     signals = []
     for _, row in risk_df.iterrows():
         ticker = row['Ticker']
-        d5 = row['5D %']
+        d5 = row['1W %']
         z = row.get('5D Z')
         z_tag = f" Z={z:+.1f}" if z is not None else ""
 
@@ -556,39 +852,39 @@ def compute_risk_dashboard(category_data):
 
         elif ticker == 'GLD':
             if z is not None and z > 2:
-                signals.append(('🔴', f"금 5D {d5:+.1f}% — 30일 대비 이상 급등{z_tag}"))
+                signals.append(('🔴', f"금 1W {d5:+.1f}% — 30일 대비 이상 급등{z_tag}"))
             elif d5 > 2:
-                signals.append(('🔴', f"금 5D {d5:+.1f}% — 안전자산 수요 급증{z_tag}"))
+                signals.append(('🔴', f"금 1W {d5:+.1f}% — 안전자산 수요 급증{z_tag}"))
             elif z is not None and z > 1:
-                signals.append(('🟡', f"금 5D {d5:+.1f}% — 30일 대비 상승{z_tag}"))
+                signals.append(('🟡', f"금 1W {d5:+.1f}% — 30일 대비 상승{z_tag}"))
             elif d5 > 0.5:
-                signals.append(('🟡', f"금 5D {d5:+.1f}% — 안전자산 소폭 선호{z_tag}"))
+                signals.append(('🟡', f"금 1W {d5:+.1f}% — 안전자산 소폭 선호{z_tag}"))
 
         elif ticker == 'USO':
             if z is not None and z > 2:
-                signals.append(('🔴', f"유가 5D {d5:+.1f}% — 30일 대비 이상 급등{z_tag}"))
+                signals.append(('🔴', f"유가 1W {d5:+.1f}% — 30일 대비 이상 급등{z_tag}"))
             elif d5 > 5:
-                signals.append(('🔴', f"유가 5D {d5:+.1f}% — 지정학/공급 리스크{z_tag}"))
+                signals.append(('🔴', f"유가 1W {d5:+.1f}% — 지정학/공급 리스크{z_tag}"))
             elif z is not None and z < -2:
-                signals.append(('🟢', f"유가 5D {d5:+.1f}% — 30일 대비 이상 급락{z_tag}"))
+                signals.append(('🟢', f"유가 1W {d5:+.1f}% — 30일 대비 이상 급락{z_tag}"))
             elif d5 < -5:
-                signals.append(('🟢', f"유가 5D {d5:+.1f}% — 수요 약화 우려{z_tag}"))
+                signals.append(('🟢', f"유가 1W {d5:+.1f}% — 수요 약화 우려{z_tag}"))
 
         elif ticker == 'UUP':
             if z is not None and z > 2:
-                signals.append(('🔴', f"달러 5D {d5:+.1f}% — 30일 대비 이상 강세{z_tag}"))
+                signals.append(('🔴', f"달러 1W {d5:+.1f}% — 30일 대비 이상 강세{z_tag}"))
             elif d5 > 1:
-                signals.append(('🔴', f"달러 5D {d5:+.1f}% — EM 자금유출 압력{z_tag}"))
+                signals.append(('🔴', f"달러 1W {d5:+.1f}% — EM 자금유출 압력{z_tag}"))
             elif z is not None and z < -2:
-                signals.append(('🟢', f"달러 5D {d5:+.1f}% — 30일 대비 이상 약세{z_tag}"))
+                signals.append(('🟢', f"달러 1W {d5:+.1f}% — 30일 대비 이상 약세{z_tag}"))
             elif d5 < -1:
-                signals.append(('🟢', f"달러 5D {d5:+.1f}% — EM 자금유입 우호적{z_tag}"))
+                signals.append(('🟢', f"달러 1W {d5:+.1f}% — EM 자금유입 우호적{z_tag}"))
 
         elif ticker == 'FXY':
             if z is not None and z > 2:
-                signals.append(('🟡', f"엔화 5D {d5:+.1f}% — 30일 대비 이상 강세{z_tag}"))
+                signals.append(('🟡', f"엔화 1W {d5:+.1f}% — 30일 대비 이상 강세{z_tag}"))
             elif d5 > 2:
-                signals.append(('🟡', f"엔화 5D {d5:+.1f}% — 캐리트레이드 청산 주의{z_tag}"))
+                signals.append(('🟡', f"엔화 1W {d5:+.1f}% — 캐리트레이드 청산 주의{z_tag}"))
 
     return signals
 
@@ -606,68 +902,68 @@ def generate_composite_signals(category_data):
     rot_score = rot_result[0] if rot_result is not None else None
     uup = get_row('UUP')
 
-    if rot_score is not None and rot_score > 3 and uup is not None and uup['5D %'] > 0.5:
+    if rot_score is not None and rot_score > 3 and uup is not None and uup['1W %'] > 0.5:
         signals.append({
             'Level': '🔴 HIGH',
             'Signal': '반도체 로테이션 + 달러 강세 동시 발생',
             'Implication': '외인 한국 현물 순매도 가속 예상. 선물 숏 동반 가능.',
-            'Data': f'로테이션 스코어: {rot_score}, 달러 5D: +{uup["5D %"]:.1f}%'
+            'Data': f'로테이션 스코어: {rot_score}, 달러 1W: +{uup["1W %"]:.1f}%'
         })
 
     # 2. EM 유입 + 한국 언더퍼폼 = 반도체 기피
     em_rel = compute_em_relative(category_data)
     if em_rel is not None and len(em_rel) > 0:
         eem_row = em_rel[em_rel['Pair'] == 'EWY vs EEM(보정)']
-        if len(eem_row) > 0 and eem_row['5D 상대%'].values[0] < -2:
+        if len(eem_row) > 0 and eem_row['1W 상대%'].values[0] < -2:
             signals.append({
                 'Level': '🟡 MED',
                 'Signal': 'EM 자금 유입 중이지만 한국은 소외',
                 'Implication': '글로벌 EM 로테이션에서 한국=반도체 인식으로 비중 축소.',
-                'Data': f'EWY vs EEM(보정) 5D: {eem_row["5D 상대%"].values[0]:+.1f}%'
+                'Data': f'EWY vs EEM(보정) 5D: {eem_row["1W 상대%"].values[0]:+.1f}%'
             })
 
     # 3. 금+유가 동시 급등 — IA-05 교차 분류
     gld = get_row('GLD')
     uso = get_row('USO')
     if gld is not None and uso is not None:
-        gld_5d = gld['5D %']
-        uso_5d = uso['5D %']
+        gld_5d = gld['1W %']
+        uso_5d = uso['1W %']
         if gld_5d > 1.5 and uso_5d > 3:
             tlt = get_row('TLT')
             uup_r = get_row('UUP')
             fxi = get_row('FXI')
-            tlt_5d = tlt['5D %'] if tlt is not None else 0
-            uup_5d = uup_r['5D %'] if uup_r is not None else 0
-            fxi_5d = fxi['5D %'] if fxi is not None else 0
+            tlt_5d = tlt['1W %'] if tlt is not None else 0
+            uup_5d = uup_r['1W %'] if uup_r is not None else 0
+            fxi_5d = fxi['1W %'] if fxi is not None else 0
 
-            cross = f'TLT 5D: {tlt_5d:+.1f}%, USD 5D: {uup_5d:+.1f}%, FXI 5D: {fxi_5d:+.1f}%'
+            cross = f'TLT 1W: {tlt_5d:+.1f}%, USD 1W: {uup_5d:+.1f}%, FXI 1W: {fxi_5d:+.1f}%'
             if tlt_5d > 1 and uup_5d > 0:
                 signals.append({
                     'Level': '🔴 HIGH',
                     'Signal': '금 + 유가 동시 상승 — 지정학 리스크 (TLT 동반 상승 확인)',
                     'Implication': '안전자산 동반 상승 — 리스크오프 확인. 중동/대만 긴장 점검 필요.',
-                    'Data': f'금 5D: +{gld_5d:.1f}%, 유가 5D: +{uso_5d:.1f}% | {cross}'
+                    'Data': f'금 1W: +{gld_5d:.1f}%, 유가 1W: +{uso_5d:.1f}% | {cross}'
                 })
             elif uup_5d < -0.5:
                 signals.append({
                     'Level': '🟡 MED',
                     'Signal': '금 + 유가 동시 상승 — 달러 약세 주도 (명목 상승)',
                     'Implication': '달러 약세가 원자재 가격을 밀어올림. EM 자금유입에는 우호적.',
-                    'Data': f'금 5D: +{gld_5d:.1f}%, 유가 5D: +{uso_5d:.1f}% | {cross}'
+                    'Data': f'금 1W: +{gld_5d:.1f}%, 유가 1W: +{uso_5d:.1f}% | {cross}'
                 })
             elif fxi_5d > 2:
                 signals.append({
                     'Level': '🟡 MED',
                     'Signal': '금 + 유가 동시 상승 — 중국 경기부양 기대 (FXI 동반 상승)',
                     'Implication': 'FXI 강세 동반 — 중국 부양책 기대. 한국 수출주에 긍정적 가능성.',
-                    'Data': f'금 5D: +{gld_5d:.1f}%, 유가 5D: +{uso_5d:.1f}% | {cross}'
+                    'Data': f'금 1W: +{gld_5d:.1f}%, 유가 1W: +{uso_5d:.1f}% | {cross}'
                 })
             else:
                 signals.append({
                     'Level': '🟡 MED',
                     'Signal': '금 + 유가 동시 상승 — 인플레이션 기대 상승',
                     'Implication': '안전자산 동반 없이 원자재만 상승. 인플레 기대 우세, 금리 경로 주시.',
-                    'Data': f'금 5D: +{gld_5d:.1f}%, 유가 5D: +{uso_5d:.1f}% | {cross}'
+                    'Data': f'금 1W: +{gld_5d:.1f}%, 유가 1W: +{uso_5d:.1f}% | {cross}'
                 })
 
     # 4. VIX 급등 + 엔화 강세 = 캐리트레이드 청산
@@ -675,8 +971,8 @@ def generate_composite_signals(category_data):
     fxy = get_row('FXY')
     if vix is not None and fxy is not None:
         vix_val = vix['Last']
-        fxy_5d = fxy['5D %']
-        data_str = f'VIX: {vix_val:.0f}, 엔화 5D: {fxy_5d:+.1f}%'
+        fxy_5d = fxy['1W %']
+        data_str = f'VIX: {vix_val:.0f}, 엔화 1W: {fxy_5d:+.1f}%'
         if vix_val > 28 and fxy_5d > 3:
             signals.append({
                 'Level': '🔴 HIGH',
@@ -692,37 +988,37 @@ def generate_composite_signals(category_data):
                 'Data': data_str
             })
 
-    # 5. [NEW] Credit Spread: HYG-LQD 5D 스프레드
+    # 5. [NEW] Credit Spread: HYG-LQD 1W 스프레드
     hyg = get_row('HYG')
     lqd = get_row('LQD')
     if hyg is not None and lqd is not None:
-        spread_5d = hyg['5D %'] - lqd['5D %']
+        spread_5d = hyg['1W %'] - lqd['1W %']
         if spread_5d < -1.5:
             signals.append({
                 'Level': '🔴 HIGH',
-                'Signal': f'크레딧 스프레드 확대 — HYG vs LQD 5D: {spread_5d:+.1f}%',
+                'Signal': f'크레딧 스프레드 확대 — HYG vs LQD 1W: {spread_5d:+.1f}%',
                 'Implication': '하이일드 급락 / 투자등급 상대 강세 → 신용 리스크 확대. 위험 자산 전반 경계.',
-                'Data': f'HYG 5D: {hyg["5D %"]:+.1f}%, LQD 5D: {lqd["5D %"]:+.1f}%'
+                'Data': f'HYG 1W: {hyg["1W %"]:+.1f}%, LQD 1W: {lqd["1W %"]:+.1f}%'
             })
         elif spread_5d < -0.8:
             signals.append({
                 'Level': '🟡 MED',
-                'Signal': f'크레딧 스프레드 소폭 확대 — HYG vs LQD 5D: {spread_5d:+.1f}%',
+                'Signal': f'크레딧 스프레드 소폭 확대 — HYG vs LQD 1W: {spread_5d:+.1f}%',
                 'Implication': '하이일드 약세 시작. 추세 지속 시 리스크오프 전환 가능.',
-                'Data': f'HYG 5D: {hyg["5D %"]:+.1f}%, LQD 5D: {lqd["5D %"]:+.1f}%'
+                'Data': f'HYG 1W: {hyg["1W %"]:+.1f}%, LQD 1W: {lqd["1W %"]:+.1f}%'
             })
 
     # 6. [NEW] US Exceptionalism: SPY vs EFA
     spy = get_row('SPY')
     efa = get_row('EFA')
     if spy is not None and efa is not None:
-        us_ex_5d = spy['5D %'] - efa['5D %']
+        us_ex_5d = spy['1W %'] - efa['1W %']
         if us_ex_5d > 3:
             signals.append({
                 'Level': '🟡 MED',
-                'Signal': f'US Exceptionalism — SPY vs EFA 5D: +{us_ex_5d:.1f}%',
+                'Signal': f'US Exceptionalism — SPY vs EFA 1W: +{us_ex_5d:.1f}%',
                 'Implication': '미국 독주 → 비미국 자산에서 자금 이탈 압력. EM 로테이션 리스크.',
-                'Data': f'SPY 5D: {spy["5D %"]:+.1f}%, EFA 5D: {efa["5D %"]:+.1f}%'
+                'Data': f'SPY 1W: {spy["1W %"]:+.1f}%, EFA 1W: {efa["1W %"]:+.1f}%'
             })
 
     # 시그널 부재 시 커버리지 명시
@@ -804,7 +1100,7 @@ def compute_buying_efficiency(date_str=None):
 # JSON v2 출력
 # ============================================================
 
-def export_json_v2(category_data, summaries, composite, meta, buying_eff=None):
+def export_json_v2(category_data, summaries, composite, meta, buying_eff=None, group_te=None):
     """계층적 JSON v2 출력.
 
     {version: 2, categories: {cat_key: {label, icon, groups, summary}}, signals, kpi, ...}
@@ -873,7 +1169,7 @@ def export_json_v2(category_data, summaries, composite, meta, buying_eff=None):
     if em_rel is not None and len(em_rel) > 0:
         eem_row = em_rel[em_rel['Pair'] == 'EWY vs EEM(보정)']
         if len(eem_row) > 0:
-            data['kpi']['em_relative_5d'] = eem_row['5D 상대%'].values[0]
+            data['kpi']['em_relative_5d'] = eem_row['1W 상대%'].values[0]
 
     vix = _get_ticker_row(category_data, '^VIX')
     if vix is not None:
@@ -882,12 +1178,12 @@ def export_json_v2(category_data, summaries, composite, meta, buying_eff=None):
     hyg = _get_ticker_row(category_data, 'HYG')
     lqd = _get_ticker_row(category_data, 'LQD')
     if hyg is not None and lqd is not None:
-        data['kpi']['hyg_lqd_spread_5d'] = round(hyg['5D %'] - lqd['5D %'], 2)
+        data['kpi']['hyg_lqd_spread_5d'] = round(hyg['1W %'] - lqd['1W %'], 2)
 
     spy = _get_ticker_row(category_data, 'SPY')
     efa = _get_ticker_row(category_data, 'EFA')
     if spy is not None and efa is not None:
-        data['kpi']['spy_vs_efa_5d'] = round(spy['5D %'] - efa['5D %'], 2)
+        data['kpi']['spy_vs_efa_5d'] = round(spy['1W %'] - efa['1W %'], 2)
 
     # v1 호환 레이어
     v1 = {'rotation': [], 'em': [], 'risk': []}
@@ -900,7 +1196,7 @@ def export_json_v2(category_data, summaries, composite, meta, buying_eff=None):
     }
     for cat_key, df in category_data.items():
         target = v1_map.get(cat_key, 'risk')
-        cols = ['Group', 'Ticker', 'Name', '1D %', '5D %', '5D Ref', '30D %', 'Vol Δ%']
+        cols = ['Group', 'Ticker', 'Name', '1D %', '1W %', '1M %', '3M %', '6M %', '1Y %', 'Vol Δ%']
         available = [c for c in cols if c in df.columns]
         records = df[available].to_dict('records')
         for r in records:
@@ -916,6 +1212,10 @@ def export_json_v2(category_data, summaries, composite, meta, buying_eff=None):
     # 매수 효율
     if buying_eff is not None and buying_eff.get('error') is None:
         data['buying_efficiency'] = buying_eff
+
+    # Group TE (multi-window)
+    if group_te:
+        data['group_te'] = group_te
 
     # 저장
     filepath = 'flow_monitor_latest.json'
@@ -954,8 +1254,11 @@ def print_group_summary(summaries):
                 'Category': cat_config['label'][:16],
                 'Group': grp_name,
                 '1D %': vals['1D %'],
-                '5D %': vals['5D %'],
-                '30D %': vals['30D %'],
+                '1W %': vals['1W %'],
+                '1M %': vals['1M %'],
+                '3M %': vals.get('3M %'),
+                '6M %': vals.get('6M %'),
+                '1Y %': vals.get('1Y %'),
             })
 
     if rows:
@@ -971,7 +1274,7 @@ def print_detail_tables(category_data):
         if df is None:
             continue
         print(f"\n── {cat_config['icon']} {cat_config['label']} {'─' * 40}")
-        cols = ['Group', 'Ticker', 'Name', 'Last', '1D %', '5D %', '5D Z', '30D %', 'Vol Δ%']
+        cols = ['Group', 'Ticker', 'Name', 'Last', '1D %', '1W %', '1M %', '3M %', '6M %', '1Y %', 'Vol Δ%']
         available = [c for c in cols if c in df.columns]
         print(tabulate(df[available], headers='keys', tablefmt='simple',
                        showindex=False, numalign='right', floatfmt='.2f'))
@@ -998,7 +1301,7 @@ def run_dashboard(detail=False, export=False):
     """메인 대시보드 실행."""
 
     # 배치 수집
-    category_data, errors, meta = fetch_all_data(days=35)
+    category_data, errors, meta = fetch_all_data(days=400)
 
     if not category_data:
         print("  ⚠️  데이터 수집 실패. 네트워크를 확인하세요.")
@@ -1031,7 +1334,7 @@ def run_dashboard(detail=False, export=False):
         rot_score, score_meta = rot_result
         direction = "→ Growth→Value 진행" if rot_score > 0 else "→ Value→Growth 복귀"
         bar = "█" * min(abs(int(rot_score)), 20)
-        print(f"\n  📊 로테이션 스코어 (5D): {rot_score:+.1f}  {direction}")
+        print(f"\n  📊 로테이션 스코어 (1W): {rot_score:+.1f}  {direction}")
         print(f"     [{bar}]")
         if score_meta is not None:
             raw = score_meta['raw_with_leverage']
@@ -1052,6 +1355,51 @@ def run_dashboard(detail=False, export=False):
     # 복합 시그널
     composite = generate_composite_signals(category_data)
     print_signals("복합 시그널 — 외인 행동 예측", composite)
+
+    # 그룹 간 Transfer Entropy (4개 윈도우 × 가격/플로우)
+    group_te_price = {}
+    group_te_flow = {}
+    close_series = meta.get('close_series', {})
+    volume_series = meta.get('volume_series', {})
+    te_windows = {'2W': 10, '1M': 21, '3M': 63, '6M': 126}
+
+    if close_series:
+        grp_ret_full = build_group_returns(close_series, window=300)
+        grp_flow_full = build_group_flow_returns(close_series, volume_series, window=300) if volume_series else pd.DataFrame()
+
+        # 가격 TE
+        print(f"\n── 그룹 간 정보 흐름: 가격 TE (Price) {'─' * 22}")
+        if len(grp_ret_full.columns) >= 3:
+            for label, window in te_windows.items():
+                grp_ret = grp_ret_full.iloc[-window:] if len(grp_ret_full) >= window else grp_ret_full
+                n_obs = len(grp_ret)
+                if n_obs < 10:
+                    continue
+                te_bins = 3 if n_obs < 15 else 4 if n_obs < 30 else 6 if n_obs < 60 else 8
+                print(f"  [{label}] {n_obs}일 (bins={te_bins}) → 계산 중...")
+                te_result = compute_group_te(grp_ret, bins=te_bins, max_lag=2, n_surrogates=50, top_n=8)
+                group_te_price[label] = te_result
+                if te_result:
+                    for te in te_result[:3]:
+                        print(f"    {te['direction']:30s} Z={te['net_z']:+.1f} lag={te['lag']}")
+
+        # 플로우 TE
+        print(f"\n── 그룹 간 정보 흐름: 플로우 TE (Dollar Volume) {'─' * 14}")
+        if len(grp_flow_full.columns) >= 3:
+            for label, window in te_windows.items():
+                grp_flow = grp_flow_full.iloc[-window:] if len(grp_flow_full) >= window else grp_flow_full
+                n_obs = len(grp_flow)
+                if n_obs < 10:
+                    continue
+                te_bins = 3 if n_obs < 15 else 4 if n_obs < 30 else 6 if n_obs < 60 else 8
+                print(f"  [{label}] {n_obs}일 (bins={te_bins}) → 계산 중...")
+                te_result = compute_group_te(grp_flow, bins=te_bins, max_lag=2, n_surrogates=50, top_n=8)
+                group_te_flow[label] = te_result
+                if te_result:
+                    for te in te_result[:3]:
+                        print(f"    {te['direction']:30s} Z={te['net_z']:+.1f} lag={te['lag']}")
+        else:
+            print("  Volume 데이터 부족 — 건너뜀")
 
     # 매수 효율
     buying_eff = None
@@ -1097,7 +1445,8 @@ def run_dashboard(detail=False, export=False):
             filename = f"flow_monitor_{cat_key}_{timestamp}.csv"
             df.to_csv(filename, index=False, encoding='utf-8-sig')
             print(f"  💾 CSV: {filename}")
-        export_json_v2(category_data, summaries, composite, meta, buying_eff)
+        group_te_combined = {'price': group_te_price, 'flow': group_te_flow}
+        export_json_v2(category_data, summaries, composite, meta, buying_eff, group_te=group_te_combined)
 
     # 푸터
     if meta.get('last_date'):
@@ -1123,7 +1472,7 @@ def run_dashboard(detail=False, export=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='글로벌 플로우 모니터 v2.0')
     parser.add_argument('--detail', action='store_true', help='개별 티커 전체 출력')
-    parser.add_argument('--export', action='store_true', help='JSON v2 + CSV 내보내기')
+    parser.add_argument('--no-export', action='store_true', help='JSON/CSV 내보내기 생략')
 
     args = parser.parse_args()
-    run_dashboard(detail=args.detail, export=args.export)
+    run_dashboard(detail=args.detail, export=not args.no_export)

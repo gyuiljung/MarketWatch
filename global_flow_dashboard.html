@@ -85,12 +85,49 @@
     gap: 8px;
     padding: 7px 10px;
     border-radius: 4px;
-    margin-bottom: 3px;
+    margin-bottom: 0;
     transition: transform 0.1s;
+    cursor: pointer;
+    user-select: none;
   }
   .flow-row:hover {
     transform: translateX(2px);
+    filter: brightness(1.15);
   }
+  .flow-row .expand-icon {
+    font-size: 8px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    margin-right: 2px;
+  }
+  .flow-row .expand-icon.open { transform: rotate(90deg); }
+
+  /* ── Ticker Detail (inline expand) ── */
+  .ticker-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-bottom: 3px;
+  }
+  .ticker-expand.open { max-height: 600px; }
+  .ticker-expand-inner {
+    padding: 4px 8px 8px 20px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 0 0 4px 4px;
+    border-left: 2px solid var(--blue);
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+  .ticker-expand-inner table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .ticker-expand-inner th {
+    text-align: left; padding: 2px 4px; color: var(--text-muted);
+    font-size: 8px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 500;
+  }
+  .ticker-expand-inner th.r { text-align: right; }
+  .ticker-expand-inner td { padding: 3px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .ticker-expand-inner td.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .ticker-expand-inner td.tk { font-weight: 700; font-size: 11px; }
+  .ticker-expand-inner td.nm { color: var(--text-dim); font-size: 9px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .flow-row .grp-label {
     font-size: 11px;
     white-space: nowrap;
@@ -398,6 +435,24 @@
   .tag-green  { background: var(--green-bg); color: var(--green); }
   .tag-yellow { background: var(--yellow-bg); color: var(--yellow); }
 
+  /* ── TE Flow rows ── */
+  .te-flow-row {
+    display: grid;
+    grid-template-columns: 220px 60px 40px 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    font-size: 11px;
+  }
+  .te-flow-row:hover { background: var(--surface2); }
+  .te-flow-row .te-dir { font-weight: 600; }
+  .te-flow-row .te-z { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .te-flow-row .te-lag { color: var(--text-dim); font-size: 10px; text-align: center; }
+  .te-flow-row .te-bar { height: 14px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,0.03); }
+  .te-flow-row .te-bar-fill { height: 100%; border-radius: 3px; }
+
   /* ── Bottom sections ── */
   .bottom-grid {
     display: grid;
@@ -458,6 +513,58 @@
     line-height: 1.6;
   }
 
+  /* ── Period Selector ── */
+  .period-selector {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .period-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .period-btn:hover { border-color: var(--blue); color: var(--text); }
+  .period-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* ── TE 4-grid ── */
+  .te-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .te-panel {
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+  }
+  .te-panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .te-panel .te-flow-row { grid-template-columns: 180px 55px 35px 1fr; font-size: 10px; padding: 3px 4px; }
+  .te-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 6px 0 2px 0;
+    padding-bottom: 2px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
   /* ── Buying Efficiency ── */
   #buying-eff-card { margin-bottom: 16px; }
 
@@ -503,14 +610,22 @@
   </div>
 </div>
 
-<!-- FLOW SCOREBOARD -->
+<!-- PERIOD SELECTOR + FLOW SCOREBOARD -->
+<div class="period-selector" id="period-selector">
+  <button class="period-btn" data-period="d1" data-key="1D %">1D</button>
+  <button class="period-btn active" data-period="d5" data-key="1W %">1W</button>
+  <button class="period-btn" data-period="d30" data-key="1M %">1M</button>
+  <button class="period-btn" data-period="d90" data-key="3M %">3M</button>
+  <button class="period-btn" data-period="d180" data-key="6M %">6M</button>
+  <button class="period-btn" data-period="d365" data-key="1Y %">1Y</button>
+</div>
 <div class="flow-scoreboard">
   <div class="flow-panel" id="inflow-panel">
-    <div class="flow-panel-title inflow">🔺 GAINERS (5D+) <span class="count" id="inflow-count"></span></div>
+    <div class="flow-panel-title inflow">🔺 GAINERS (1W+) <span class="count" id="inflow-count"></span></div>
     <div id="inflow-rows"></div>
   </div>
   <div class="flow-panel" id="outflow-panel">
-    <div class="flow-panel-title outflow">🔻 LOSERS (5D-) <span class="count" id="outflow-count"></span></div>
+    <div class="flow-panel-title outflow">🔻 LOSERS (1W-) <span class="count" id="outflow-count"></span></div>
     <div id="outflow-rows"></div>
   </div>
 </div>
@@ -527,7 +642,7 @@
     <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-rot-bar"></div></div>
   </div>
   <div class="kpi-card">
-    <div class="kpi-label">EWY vs EEM (5D)</div>
+    <div class="kpi-label">EWY vs EEM (1W)</div>
     <div class="kpi-value" id="kpi-em">--</div>
     <div class="kpi-sub" id="kpi-em-sub">한국 vs EM 광역</div>
     <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-em-bar"></div></div>
@@ -541,13 +656,13 @@
   <div class="kpi-card">
     <div class="kpi-label">Credit Spread</div>
     <div class="kpi-value" id="kpi-credit">--</div>
-    <div class="kpi-sub" id="kpi-credit-sub">HYG - LQD 5D</div>
+    <div class="kpi-sub" id="kpi-credit-sub">HYG - LQD 1W</div>
     <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-credit-bar"></div></div>
   </div>
   <div class="kpi-card">
     <div class="kpi-label">US Exceptionalism</div>
     <div class="kpi-value" id="kpi-usex">--</div>
-    <div class="kpi-sub" id="kpi-usex-sub">SPY - EFA 5D</div>
+    <div class="kpi-sub" id="kpi-usex-sub">SPY - EFA 1W</div>
     <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-usex-bar"></div></div>
   </div>
 </div>
@@ -556,6 +671,13 @@
 <div class="signals-bar">
   <div class="title">🚨 복합 시그널 -- 외인 행동 예측</div>
   <div id="signals"></div>
+</div>
+
+<!-- GROUP TE (Transfer Entropy) — 4-window grid -->
+<div class="card" id="group-te-card" hidden style="margin-bottom:16px">
+  <div class="card-title">🔗 그룹 간 정보 흐름 (Transfer Entropy)</div>
+  <div style="font-size:10px;color:var(--text-dim);margin-bottom:10px">A→B: A가 B에 선행. <span style="color:#60a5fa">Price</span>=가격 수익률 전이 <span style="color:#22d3ee">Flow</span>=거래대금(Close×Vol) 흐름 전이. Z>2.5 유의미.</div>
+  <div class="te-grid" id="group-te-grid"></div>
 </div>
 
 <!-- CATEGORY DETAIL (collapsed by default) -->
@@ -661,9 +783,9 @@
 </div>
 
 <div class="note" id="footer-note">
-  데이터 연동: <code>python global_flow_monitor.py --export</code> 실행 후 새로고침<br>
+  데이터 연동: <code>python global_flow_monitor.py</code> 실행 후 새로고침 (자동 export)<br>
   데이터 소스: Yahoo Finance (15분 지연) + KRX (pykrx)<br>
-  v2.1 -- Flow Scoreboard + Top Movers + 강화 색상
+  v2.2 -- 그룹 클릭 → 하위 티커 펼치기 + 1D/1W/1M/3M/6M/1Y 시계열
 </div>
 
 <script>
@@ -731,13 +853,14 @@ function fmtDollar(v) {
   return `${sign}$${Math.round(abs)}`;
 }
 
-// ── Collect all groups with 5D% for scoreboard ──
+// ── Collect all groups with 1W% for scoreboard ──
 function collectGroups(categories) {
   const groups = [];
   const EXCLUDE_GROUPS = ['Volatility']; // VIX shown separately in KPI
 
   for (const [catKey, cat] of Object.entries(categories)) {
     const summary = cat.summary || {};
+    const grpData = cat.groups || {};
     for (const [grpName, vals] of Object.entries(summary)) {
       if (EXCLUDE_GROUPS.includes(grpName)) continue;
       groups.push({
@@ -745,37 +868,95 @@ function collectGroups(categories) {
         icon: cat.icon || '',
         catLabel: cat.label || '',
         d1: vals['1D %'] ?? 0,
-        d5: vals['5D %'] ?? 0,
-        d30: vals['30D %'] ?? 0,
+        d5: vals['1W %'] ?? 0,
+        d30: vals['1M %'] ?? 0,
+        d90: vals['3M %'] ?? null,
+        d180: vals['6M %'] ?? null,
+        d365: vals['1Y %'] ?? null,
         tradingImpact: vals['trading_impact'] ?? 0,
         avgDolVol: vals['avg_dol_vol'] ?? 0,
+        tickers: grpData[grpName] || [],
       });
     }
   }
   return groups;
 }
 
-// ── Flow Scoreboard ──
-function renderFlowScoreboard(categories) {
-  const groups = collectGroups(categories);
+// ── Format AUM ──
+function fmtAum(v) {
+  if (v == null || isNaN(v) || v === 0) return '';
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return `$${(abs/1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `$${Math.round(abs/1e6)}M`;
+  if (abs >= 1e3) return `$${Math.round(abs/1e3)}K`;
+  return `$${Math.round(abs)}`;
+}
+
+// ── Build ticker detail table HTML ──
+function buildTickerTable(tickers) {
+  if (!tickers || tickers.length === 0) return '';
+  const cols = ['1D %','1W %','1M %','3M %','6M %','1Y %'];
+  const labels = ['1D','1W','1M','3M','6M','1Y'];
+  let html = '<table><thead><tr><th>Ticker</th><th>Name</th>';
+  labels.forEach(l => { html += `<th class="r">${l}</th>`; });
+  html += '<th class="r">DailyVol</th></tr></thead><tbody>';
+  tickers.forEach(t => {
+    html += `<tr>`;
+    html += `<td class="tk">${t.Ticker||''}</td>`;
+    html += `<td class="nm">${t.Name||''}</td>`;
+    cols.forEach(c => {
+      const v = t[c];
+      const cls = v > 0.05 ? 'pos' : v < -0.05 ? 'neg' : 'neu';
+      const bold = Math.abs(v||0) > 5 ? 'font-weight:700;' : '';
+      html += `<td class="r"><span class="${cls}" style="${bold}">${v != null ? (v > 0 ? '+' : '') + v.toFixed(1) + '%' : '--'}</span></td>`;
+    });
+    html += `<td class="r" style="color:var(--text-muted);font-size:9px">${fmtAum(t.AvgDolVol)}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+// ── Flow Scoreboard (period-switchable) ──
+let _cachedGroups = [];
+let _currentPeriod = 'd5';
+const PERIOD_MAP = {d1:'d1', d5:'d5', d30:'d30', d90:'d90', d180:'d180', d365:'d365'};
+const PERIOD_LABELS = {d1:'1D', d5:'1W', d30:'1M', d90:'3M', d180:'6M', d365:'1Y'};
+
+function renderFlowScoreboard(categories, period) {
+  period = period || _currentPeriod;
+  _currentPeriod = period;
+  const groups = _cachedGroups.length ? _cachedGroups : collectGroups(categories);
+  if (categories) _cachedGroups = groups;
   if (groups.length === 0) return;
 
-  const maxAbs = Math.max(...groups.map(g => Math.abs(g.d5)), 1);
+  // Get value for current period
+  function getVal(g) {
+    return g[period] ?? 0;
+  }
 
-  const inflow = groups.filter(g => g.d5 >= 0).sort((a, b) => b.d5 - a.d5);
-  const outflow = groups.filter(g => g.d5 < 0).sort((a, b) => a.d5 - b.d5);
+  const maxAbs = Math.max(...groups.map(g => Math.abs(getVal(g))), 0.5);
+  const pLabel = PERIOD_LABELS[period] || '1W';
+
+  const inflow = groups.filter(g => getVal(g) >= 0).sort((a, b) => getVal(b) - getVal(a));
+  const outflow = groups.filter(g => getVal(g) < 0).sort((a, b) => getVal(a) - getVal(b));
 
   document.getElementById('inflow-count').textContent = `${inflow.length}`;
   document.getElementById('outflow-count').textContent = `${outflow.length}`;
+
+  // Update panel titles
+  document.querySelector('#inflow-panel .flow-panel-title').innerHTML = `🔺 GAINERS (${pLabel}+) <span class="count">${inflow.length}</span>`;
+  document.querySelector('#outflow-panel .flow-panel-title').innerHTML = `🔻 LOSERS (${pLabel}-) <span class="count">${outflow.length}</span>`;
 
   function renderRows(container, items, isPositive) {
     const el = document.getElementById(container);
     el.innerHTML = '';
     items.forEach(g => {
-      const pctWidth = Math.min(Math.abs(g.d5) / maxAbs * 100, 100);
-      const bg = heatColor(g.d5, maxAbs);
-      const bc = barColor(g.d5, maxAbs);
-      const tc = textColor(g.d5, maxAbs);
+      const val = getVal(g);
+      const pctWidth = Math.min(Math.abs(val) / maxAbs * 100, 100);
+      const bg = heatColor(val, maxAbs);
+      const bc = barColor(val, maxAbs);
+      const tc = textColor(val, maxAbs);
       const flowStr = fmtDollar(g.tradingImpact);
       const flowBig = Math.abs(g.tradingImpact) >= 1e9 ? ' big' : '';
       const flowColor = g.tradingImpact > 0 ? '#4ade80' : g.tradingImpact < 0 ? '#f87171' : 'var(--text-dim)';
@@ -783,24 +964,49 @@ function renderFlowScoreboard(categories) {
       const row = document.createElement('div');
       row.className = 'flow-row';
       row.style.background = bg;
-      row.title = `${g.catLabel} > ${g.name}\n1D: ${fmtPctPlain(g.d1)}%  5D: ${fmtPctPlain(g.d5)}%  30D: ${fmtPctPlain(g.d30)}%\nAvg Daily $Vol: ${fmtDollar(g.avgDolVol)}\n5D Trading Impact: ${flowStr} (price×volume estimate)`;
+      row.title = `${g.catLabel} > ${g.name}\n1D:${fmtPctPlain(g.d1)}% 1W:${fmtPctPlain(g.d5)}% 1M:${fmtPctPlain(g.d30)}%` +
+        (g.d90!=null?` 3M:${fmtPctPlain(g.d90)}%`:'') + (g.d180!=null?` 6M:${fmtPctPlain(g.d180)}%`:'') + (g.d365!=null?` 1Y:${fmtPctPlain(g.d365)}%`:'');
       row.innerHTML = `
-        <div class="grp-label"><span class="icon">${g.icon}</span>${g.name}</div>
+        <div class="grp-label"><span class="expand-icon">&#9654;</span><span class="icon">${g.icon}</span>${g.name}</div>
         <div class="bar-wrap">
           <div class="bar-fill" style="width:${pctWidth}%;background:${bc};${isPositive ? '' : 'margin-left:auto'}"></div>
         </div>
         <div class="pct-block">
-          <div class="pct-main" style="color:${tc}">${fmtPctPlain(g.d5)}%</div>
+          <div class="pct-main" style="color:${tc}">${fmtPctPlain(val)}%</div>
           <div class="est-flow${flowBig}" style="color:${flowColor}">${flowStr}</div>
         </div>
       `;
+
+      const detail = document.createElement('div');
+      detail.className = 'ticker-expand';
+      const inner = document.createElement('div');
+      inner.className = 'ticker-expand-inner';
+      inner.innerHTML = buildTickerTable(g.tickers);
+      detail.appendChild(inner);
+
+      row.addEventListener('click', () => {
+        const icon = row.querySelector('.expand-icon');
+        detail.classList.toggle('open');
+        icon.classList.toggle('open');
+      });
+
       el.appendChild(row);
+      el.appendChild(detail);
     });
   }
 
   renderRows('inflow-rows', inflow, true);
   renderRows('outflow-rows', outflow, false);
 }
+
+// Period selector event
+document.getElementById('period-selector').addEventListener('click', (e) => {
+  const btn = e.target.closest('.period-btn');
+  if (!btn) return;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFlowScoreboard(null, btn.dataset.period);
+});
 
 // ── Top Movers Strip ──
 function renderTopMovers(topMovers) {
@@ -814,11 +1020,11 @@ function renderTopMovers(topMovers) {
   let html = '<div class="top-movers-label">TOP MOVERS</div>';
 
   gainers.forEach(m => {
-    const bg = heatColor(m['5D %'], 8);
-    const tc = textColor(m['5D %'], 8);
+    const bg = heatColor(m['1W %'], 8);
+    const tc = textColor(m['1W %'], 8);
     html += `<div class="mover-card" style="background:${bg}">
       <div class="ticker" style="color:${tc}">${m.Ticker}</div>
-      <div class="pct" style="color:#4ade80">${fmtPctPlain(m['5D %'])}%</div>
+      <div class="pct" style="color:#4ade80">${fmtPctPlain(m['1W %'])}%</div>
       <div class="name">${m.Name || ''}</div>
     </div>`;
   });
@@ -828,11 +1034,11 @@ function renderTopMovers(topMovers) {
   }
 
   losers.forEach(m => {
-    const bg = heatColor(m['5D %'], 8);
-    const tc = textColor(m['5D %'], 8);
+    const bg = heatColor(m['1W %'], 8);
+    const tc = textColor(m['1W %'], 8);
     html += `<div class="mover-card" style="background:${bg}">
       <div class="ticker" style="color:${tc}">${m.Ticker}</div>
-      <div class="pct" style="color:#f87171">${fmtPctPlain(m['5D %'])}%</div>
+      <div class="pct" style="color:#f87171">${fmtPctPlain(m['1W %'])}%</div>
       <div class="name">${m.Name || ''}</div>
     </div>`;
   });
@@ -922,28 +1128,11 @@ function renderSignals(signals) {
 }
 
 // ── Category Detail (collapsible, merged bonds_fx into risk_macro) ──
-const CAT_DISPLAY_ORDER = ['us_sectors', 'regional', 'thematic', 'risk_macro'];
+const CAT_DISPLAY_ORDER = ['us_sectors', 'regional', 'thematic', 'risk_macro', 'bonds_fx'];
 
 function renderCategoryDetail(categories) {
   const section = document.getElementById('cat-detail-section');
   section.innerHTML = '';
-
-  // Merge bonds_fx into risk_macro
-  if (categories.bonds_fx && categories.risk_macro) {
-    const rmGroups = categories.risk_macro.groups || {};
-    const bfGroups = categories.bonds_fx.groups || {};
-    for (const [gn, tickers] of Object.entries(bfGroups)) {
-      rmGroups[gn] = tickers;
-    }
-    categories.risk_macro.groups = rmGroups;
-    // Merge summary too
-    const rmSummary = categories.risk_macro.summary || {};
-    const bfSummary = categories.bonds_fx.summary || {};
-    for (const [gn, vals] of Object.entries(bfSummary)) {
-      rmSummary[gn] = vals;
-    }
-    categories.risk_macro.summary = rmSummary;
-  }
 
   // Outer wrapper
   const wrapper = document.createElement('div');
@@ -966,7 +1155,7 @@ function renderCategoryDetail(categories) {
     if (!cat) return;
     const summary = cat.summary || {};
     for (const [grpName, vals] of Object.entries(summary)) {
-      const d5 = vals['5D %'] ?? 0;
+      const d5 = vals['1W %'] ?? 0;
       const bg = heatColor(d5, 5);
       const tc = textColor(d5, 5);
       badges.innerHTML += `<span class="cat-badge" style="background:${bg};color:${tc}">${cat.icon || ''} ${grpName} ${fmtPctPlain(d5)}%</span>`;
@@ -1001,7 +1190,7 @@ function renderCategoryDetail(categories) {
       sec.className = 'group-section';
 
       const grpAvg = summary[grpName];
-      const avgStr = grpAvg ? `${fmtPctPlain(grpAvg['1D %'])} / ${fmtPctPlain(grpAvg['5D %'])} / ${fmtPctPlain(grpAvg['30D %'])}` : '';
+      const avgStr = grpAvg ? `1D:${fmtPctPlain(grpAvg['1D %'])} / 1W:${fmtPctPlain(grpAvg['1W %'])} / 1M:${fmtPctPlain(grpAvg['1M %'])}` + (grpAvg['3M %']!=null?` / 3M:${fmtPctPlain(grpAvg['3M %'])}`:'') : '';
 
       const gh = document.createElement('div');
       gh.className = 'group-header';
@@ -1012,21 +1201,18 @@ function renderCategoryDetail(categories) {
       gb.style.maxHeight = '500px';
 
       let tableHtml = `<table class="ticker-table">
-        <thead><tr><th>Ticker</th><th class="ticker-name">Name</th><th class="num">1D%</th><th class="num">5D%</th><th class="num">30D%</th><th class="num">Vol</th></tr></thead>
+        <thead><tr><th>Ticker</th><th class="ticker-name">Name</th><th class="num">1D</th><th class="num">1W</th><th class="num">1M</th><th class="num">3M</th><th class="num">6M</th><th class="num">1Y</th></tr></thead>
         <tbody>`;
 
       tickers.forEach(t => {
-        const d5 = t['5D %'];
-        const bgStyle = `background:${heatColor(d5, 5)}`;
-        const bold5 = Math.abs(d5 || 0) > 3 ? 'font-weight:700;color:#fff;' : 'font-weight:600;';
+        const d1w = t['1W %'];
+        const bgStyle = `background:${heatColor(d1w, 5)}`;
+        const pctCols = ['1D %','1W %','1M %','3M %','6M %','1Y %'];
         tableHtml += `<tr style="${bgStyle}">
           <td><strong>${t.Ticker||''}</strong></td>
-          <td class="ticker-name">${t.Name||''}</td>
-          <td class="num">${fmtPct(t['1D %'])}</td>
-          <td class="num" style="${bold5}">${fmtPct(d5)}</td>
-          <td class="num">${fmtPct(t['30D %'])}</td>
-          <td class="num"><span style="color:var(--text-dim);font-size:10px">${t['Vol Δ%'] != null ? (t['Vol Δ%'] > 0 ? '+' : '') + Math.round(t['Vol Δ%']) + '%' : ''}</span></td>
-        </tr>`;
+          <td class="ticker-name">${t.Name||''}</td>`;
+        pctCols.forEach(c => { tableHtml += `<td class="num">${fmtPct(t[c])}</td>`; });
+        tableHtml += `</tr>`;
       });
 
       tableHtml += '</tbody></table>';
@@ -1069,6 +1255,76 @@ function renderCategoryDetail(categories) {
   section.appendChild(wrapper);
 }
 
+// ── Group TE (dual: {price: {1M:[], ...}, flow: {1M:[], ...}}) ──
+function renderGroupTE(teData) {
+  if (!teData || typeof teData !== 'object') return;
+  const card = document.getElementById('group-te-card');
+  const grid = document.getElementById('group-te-grid');
+  const windowOrder = ['2W', '1M', '3M', '6M'];
+  const windowLabels = {'2W': '2주 (10일)', '1M': '1개월 (21일)', '3M': '3개월 (63일)', '6M': '6개월 (126일)'};
+
+  // Dual mode: {price: {...}, flow: {...}} or legacy single mode
+  const priceData = teData.price || teData;
+  const flowData = teData.flow || {};
+  const hasDual = !!teData.price;
+
+  let hasData = false;
+  let gridHtml = '';
+
+  function buildRows(rows, colorScheme) {
+    if (!rows || rows.length === 0) return '';
+    const maxZ = Math.max(...rows.map(t => t.net_z), 3);
+    let html = '';
+    rows.forEach(t => {
+      const pct = Math.min(t.net_z / maxZ * 100, 100);
+      let color;
+      if (colorScheme === 'price') {
+        color = t.net_z > 4 ? '#f87171' : t.net_z > 2.5 ? '#fbbf24' : '#60a5fa';
+      } else {
+        color = t.net_z > 4 ? '#c084fc' : t.net_z > 2.5 ? '#a78bfa' : '#22d3ee';
+      }
+      html += `<div class="te-flow-row">
+        <div class="te-dir" style="color:${color}">${t.direction}</div>
+        <div class="te-z" style="color:${color}">Z=${t.net_z > 0 ? '+' : ''}${t.net_z.toFixed(1)}</div>
+        <div class="te-lag">lag ${t.lag}</div>
+        <div class="te-bar"><div class="te-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>`;
+    });
+    return html;
+  }
+
+  windowOrder.forEach(key => {
+    const pRows = priceData[key] || [];
+    const fRows = flowData[key] || [];
+    if (pRows.length === 0 && fRows.length === 0) {
+      gridHtml += `<div class="te-panel">
+        <div class="te-panel-title">${windowLabels[key] || key}</div>
+        <div style="color:var(--text-muted);font-size:10px;padding:8px 0">데이터 부족</div>
+      </div>`;
+      return;
+    }
+    hasData = true;
+    let panelHtml = `<div class="te-panel"><div class="te-panel-title">${windowLabels[key] || key}</div>`;
+    if (pRows.length > 0) {
+      panelHtml += `<div class="te-section-label" style="color:#60a5fa">Price</div>`;
+      panelHtml += buildRows(pRows, 'price');
+    }
+    if (hasDual && fRows.length > 0) {
+      panelHtml += `<div class="te-section-label" style="color:#22d3ee">Flow</div>`;
+      panelHtml += buildRows(fRows, 'flow');
+    } else if (hasDual && fRows.length === 0) {
+      panelHtml += `<div class="te-section-label" style="color:var(--text-muted)">Flow — 부족</div>`;
+    }
+    panelHtml += `</div>`;
+    gridHtml += panelHtml;
+  });
+
+  if (hasData) {
+    card.hidden = false;
+    grid.innerHTML = gridHtml;
+  }
+}
+
 // ── Buying Efficiency ──
 function renderBuyingEfficiency(be) {
   if (!be || be.error) return;
@@ -1109,7 +1365,7 @@ function showTimestamp(generatedAt, dataDate) {
 }
 
 // ===================== MAIN: Load JSON =====================
-fetch('./flow_monitor_latest.json')
+fetch('./flow_monitor_latest.json?t=' + Date.now())
   .then(res => {
     if (!res.ok) throw new Error('JSON not found');
     return res.json();
@@ -1125,6 +1381,7 @@ fetch('./flow_monitor_latest.json')
     if (data.top_movers) renderTopMovers(data.top_movers);
     if (data.kpi) renderKPI(data.kpi);
     renderSignals(data.signals);
+    if (data.group_te) renderGroupTE(data.group_te);
     renderBuyingEfficiency(data.buying_efficiency);
 
     // Footer
@@ -1142,7 +1399,7 @@ fetch('./flow_monitor_latest.json')
         <div class="signal-text">
           <strong>실시간 데이터를 불러올 수 없습니다</strong>
           <div class="detail">
-            <code>python global_flow_monitor.py --export</code> 를 실행한 뒤 새로고침하세요.<br>
+            <code>python global_flow_monitor.py</code> 를 실행한 뒤 새로고침하세요 (자동 export).<br>
             flow_monitor_latest.json 파일이 이 HTML과 같은 폴더에 있어야 합니다.
           </div>
         </div>
