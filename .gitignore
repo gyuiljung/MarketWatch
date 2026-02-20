@@ -2,7 +2,14 @@ __pycache__/
 *.pyc
 /output/
 *.xlsx
+
+# Flow monitor intermediate outputs
 flow_monitor_*.json
-flow_monitor_*.csv
+flow_monitor_*_2026*.csv
+
+# Standalone dashboard builds
 flow_dashboard_*.html
-nul
+
+# Serving copies
+_dashboard/
+static/
